@@ -1,0 +1,9 @@
+内存数据库: redis
+    http://redis.io/ 
+
+命令行补齐/提示等: linenoise
+    https://github.com/antirez/linenoise
+
+
+
+
