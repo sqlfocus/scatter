@@ -1,0 +1,26 @@
+gossip算法
+    efficient reconciliation and flow control for anti-entropy protocols.pdf
+    peer-to-peer membership management for gossip-based protocols.pdf
+    SWIM-scalable weakly-consistent infection-style process group membership protocol.pdf
+    gossip protocols for large-scale distributed systems.pdf
+    Gossip algorithms.pdf
+
+    https://en.wikipedia.org/wiki/Gossip_protocol
+
+    参考软件: redis的集群模式
+
+paxos算法
+    Time, Clocks, and the Ordering of Events in a distribute system.pdf
+    Paxos Made Simple.pdf
+    Paxos Made Live - An Engineering Perspective.pdf
+
+    https://en.wikipedia.org/wiki/Paxos_algorithm
+    http://my.oschina.net/sulliy/blog/137946
+    http://duanple.blog.163.com/blog/static/709717672012920101343237/
+
+    参考软件: zookeeper
+
+raft算法
+    In Search of an Understandable Consensus Algorithm.pdf
+
+
