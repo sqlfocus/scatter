@@ -4,6 +4,7 @@
 命令行补齐/提示等: linenoise
     https://github.com/antirez/linenoise
 
-
+实现raft/paxos强一致性的算法: zookeeper
+    http://zookeeper.apache.org/
 
 
