@@ -18,9 +18,11 @@ paxos算法
     http://my.oschina.net/sulliy/blog/137946
     http://duanple.blog.163.com/blog/static/709717672012920101343237/
 
-    参考软件: zookeeper
-
 raft算法
     In Search of an Understandable Consensus Algorithm.pdf
+
+    http://www.36dsj.com/archives/42280
+
+    参考软件: zookeeper
 
 
