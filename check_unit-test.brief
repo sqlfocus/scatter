@@ -1,0 +1,135 @@
+本文档介绍c语言的单元测试模块儿, check, 以便采用测试驱动开发的方式, 
+更快速的构建程序.
+
+Check uses the fork() system call to create a new address space in which to 
+run each unit test, and then uses message queues to send information on the 
+testing process back to the test framework. That way, your unit test can do 
+all sorts of nasty things with pointers, and throw a segmentation fault, and 
+the test framework will happily note a unit test error, and chug along.
+check比起CUnit等单元测试工具, 独特的地方就在其通过fork()构建测试用例运行的
+地址空间, 然后通过消息队列交流测试结果. 这样, 测试用例的严重性bug仅仅抛出
+segmentation fault异常, 被测试框架捕捉并记录下; 而不会导致测试框架由于地址
+空间破坏而退出运行.
+
+<NOTE>
+    1) 官网 http://libcheck.github.io/check/
+    2) 教程 http://libcheck.github.io/check/doc/check_html/index.html
+
+
+1. 安装
+    命令行安装
+        $ sudo apt-get install check
+
+    源码安装
+        $ ./configure
+        $ make
+        $ make check
+        $ sudo make install
+
+    安装后以库的形式存在
+
+2. 简单示例
+    包含头文件
+        #include <check.h>
+    添加测试用例
+        START_TEST (test_name)
+        {
+            /* unit test code */
+        }
+        END_TEST
+    添加测试集
+        Suite * money_suite(void)
+        {
+            Suite *s;
+            TCase *tc_core;
+
+            s = suite_create("Money");
+
+            /* Core test case */
+            tc_core = tcase_create("Core");
+
+            tcase_add_test(tc_core, test_money_create);
+            suite_add_tcase(s, tc_core);
+
+            return s;
+        }
+    运行测试集
+        int main(void)
+        {
+            int number_failed;
+            Suite *s;
+            SRunner *sr;
+
+            s = money_suite();
+            sr = srunner_create(s);
+
+            srunner_run_all(sr, CK_NORMAL);
+            number_failed = srunner_ntests_failed(sr);
+            srunner_free(sr);
+            return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+        }
+
+3. 测试函数
+    无条件退出
+        ck_abort()
+        ck_abort_msg(...)
+    测试为false时失败
+        ck_assert(expr)
+        ck_assert_msg(expr, ...)
+    比较变量
+        ck_assert_xxx_eq(var1, var2)
+        ck_assert_xxx_ne()
+        ck_assert_xxx_lt()
+        ck_assert_xxx_le()
+        ck_assert_xxx_gt()
+        ck_assert_xxx_ge()
+
+4. 支持nofork模式
+    替换
+        srunner_run_all(sr, CK_NORMAL)
+    为
+        srunner_set_fork_status(sr, CK_NOFORK)
+        srunner_run_all(sr, CK_NORMAL)
+
+5. 指定构造、析构函数(test fixture)
+    在
+        tcase_add_test(test_case_1, unit_test_1);
+    前加入
+        tcase_add_checked_fixture(test_case_1, setup_all, teardown_all)
+    
+6. 选择运行的测试用例
+    设置环境变量
+        CK_RUN_SUITE    指定待运行的suite名
+        CK_RUN_CASE     指定待运行的test case名
+
+7. 测试覆盖率
+    check本身不支持, 利用gcc的属性'-fprofile-arcs -ftest-coverage'
+        $gcc -g -Wall -fprofile-arcs -ftest-coverage -o foo foo.c foo_check.c
+    测试完毕后, 执行
+        $gcov foo.c
+    产生文件foo.c.gcov
+             -:   41:     * object */
+            18:   42:    if (ht->table[p] != NULL) {
+             -:   43:        /* replaces the current entry */
+         #####:   44:        ht->count--;
+         #####:   45:        ht->size -= ht->table[p]->size +
+         #####:   46:          sizeof(struct hashtable_entry);
+    
+    其中第一列表示代码执行次数, '-'标识无有效代码; '18'表示执行次数; '#####'
+    表示测试代码未覆盖;
+
+8. 设置日志输出
+    SRunner *sr;
+    sr = srunner_create (make_s1_suite ());
+    srunner_add_suite (sr, make_s2_suite ());
+
+    /* 设置日志输出 */
+    srunner_set_log (sr, "test.log");
+    /*设置xml格式的日志输出*/
+    //srunner_set_xml (SRunner *sr, const char *fname);
+
+    srunner_run_all (sr, CK_NORMAL);
+
+
+
+
