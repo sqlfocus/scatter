@@ -1,0 +1,15 @@
+#+TITLE: 第三方开源软件集锦
+#+AUTHOR: sqlforcus
+
+本文档记录曾经预言或使用过的优秀的第三方开源软件，以期后续参考查阅。
+
+* redis
+    高效的内存数据库[[http://redis.io][官网]] 
+
+* linenoise
+    用于命令行补齐/提示等，集成在redis内部 [[https://github.com/antirez/linenoise][官网]]
+
+* zookeeper
+    实现raft/paxos强一致性的算法，被众多开源集成用于集群管理 [[http://zookeeper.apache.org/][官网]]
+
+
