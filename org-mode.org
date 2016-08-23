@@ -1,0 +1,20 @@
+#+TITLE: org简略教程
+#+AUTHOR: sqlfocus
+
+本文档摘录笔记神器Org的使用方法，主要集中在快捷键，以备后续查看。
+
+* 安装
+高版本的emacs已经集成了org插件，仅需要设置以下全局绑定的快捷键
+| (global-set-key "\C-cl" 'org-store-link) |
+| (global-set-key "\C-ca" 'org-agenda)     |
+| (global-set-key "\C-cc" 'org-capture)    |
+| (global-set-key "\C-cb" 'org-iswitchb)   |
+
+* org的文档结构
+** 大纲
+Org是基于Outline模式（大纲模式）的，但它提供了更灵活的编辑结构文件的命令。
+大纲模式可以让我们用层次结构来组织文档，可以折叠（隐藏）文档的一部分而只显
+示文档的大概结构或者只显示我们正在处理的部分。
+
+** 标题
+第一级的标题以一个"*"号开头，第二级的标题用两个"*"号开头，以此类推。
