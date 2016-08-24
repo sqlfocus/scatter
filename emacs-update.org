@@ -1,0 +1,22 @@
+#+TITLE: emacs升级
+#+AUTHOR: sqlfocus
+
+本文档记录emacs的升级流程，以备后续查阅。
+
+* 移除老版本
+    - 从软件中心移除
+    - $ sudo apt-get purge
+
+* 安装新版本[fn:1]
+    1) $ sudo apt-get install build-essential
+    2) $ sudo apt-get build-dep emacs24
+    3) $ wget http://mirrors.ustc.edu.cn/gnu/emacs/emacs-24.5.tar.xz
+    4) $ tar zxvf emacs-24.5.tar.gz
+    5) $ cd emacs-24.5
+    6) $ ./configure
+    7) $ make
+    8) $ sudo make install
+
+    
+[fn:1]如果不支持x，即终端模式；可以省略1-2步，第6步添加 -without-x???
+
