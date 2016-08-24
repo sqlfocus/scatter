@@ -17,6 +17,9 @@
     7) $ make
     8) $ sudo make install
 
+* 可能的依赖
+    - sudo apt-get install libncurses-dev
+
     
-[fn:1]如果不支持x，即终端模式；可以省略1-2步，第6步添加 -without-x???
+[fn:1]如果不支持x，即终端模式；可以省略1-2步，第6步添加 --without-x
 
