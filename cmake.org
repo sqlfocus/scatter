@@ -1,0 +1,22 @@
+#+TITLE: cmake进阶之路
+#+AUTHOR: sqlfocus
+
+本文档指导cmake文件的编写, 备忘
+
+- 编写cmake文件前, 仔细阅读《cmake实践.pdf》
+- 复杂命令的使用方式, 查询官方文档《Cross Platform Make.pdf》
+- 另外, 《CMake中文手册.pdf》是上述两个文档的中文译本
+- 如果有时间, 可以慢慢阅读《mastering cmake.pdf》, 了解cmake的设计理念
+- 官网给出的简略教程, 《CMake Tutorial.pdf》, 如果有时间也可以参考
+- 最后, 可以参考实例教程《CMake 入门实战.pdf》
+
+
+
+
+
+
+
+
+
+
+
