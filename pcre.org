@@ -1,14 +1,20 @@
+#+TITLE: PCRE简单实例
+#+AUTHOR: sqlfocus
+
 本文档摘录PCRE的使用方法, 以期增加知识储备库, 备忘                                 
 
-<NOTE>                                                                             
-    1) http://www.pcre.org/                                                        
+* 参考网址                                                                             
+    1) [[http://www.pcre.org/][官网]]
     2) http://blog.csdn.net/sulliy/article/details/6247155                         
     3) http://blog.chinaunix.net/uid-26575352-id-3517146.html                      
     4) nginx_mod_regex.brief
     5) 正则表达式格式略图《PCRE Regular Expression Cheatsheet.pdf》
     6) http://www.pcre.org/original/doc/html/
-    7) 官方示例: http://www.pcre.org/original/doc/html/pcredemo.html
-    8) pcre2官方示例: http://www.pcre.org/current/doc/html/pcre2demo.html
+    7) [[http://www.pcre.org/original/doc/html/pcredemo.html][官方示例]]
+    8) [[http://www.pcre.org/current/doc/html/pcre2demo.html][pcre2官方示例]]
+
+* 实例
+#+BEGIN_SRC
 
 #include <stdio.h>  
 #include <string.h>  
@@ -82,3 +88,6 @@ int main(int argc, char **argv)
 
     return 0;
 }
+
+#+END_SRC
+
