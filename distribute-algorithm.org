@@ -1,4 +1,8 @@
-gossip算法
+#+TITLE: 分布式算法简介
+#+AUTHOR: sqlfocus
+
+* gossip算法
+  #+BEGIN_EXAMPLE
     efficient reconciliation and flow control for anti-entropy protocols.pdf
     peer-to-peer membership management for gossip-based protocols.pdf
     SWIM-scalable weakly-consistent infection-style process group membership protocol.pdf
@@ -8,8 +12,10 @@ gossip算法
     https://en.wikipedia.org/wiki/Gossip_protocol
 
     参考软件: redis的集群模式
+  #+END_EXAMPLE
 
-paxos算法
+* paxos算法
+  #+BEGIN_EXAMPLE
     Time, Clocks, and the Ordering of Events in a distribute system.pdf
     Paxos Made Simple.pdf
     Paxos Made Live - An Engineering Perspective.pdf
@@ -17,12 +23,15 @@ paxos算法
     https://en.wikipedia.org/wiki/Paxos_algorithm
     http://my.oschina.net/sulliy/blog/137946
     http://duanple.blog.163.com/blog/static/709717672012920101343237/
+  #+END_EXAMPLE
 
-raft算法
+* raft算法
+  #+BEGIN_EXAMPLE
     In Search of an Understandable Consensus Algorithm.pdf
 
     http://www.36dsj.com/archives/42280
 
     参考软件: zookeeper
+  #+END_EXAMPLE
 
 
