@@ -1,0 +1,224 @@
+#+TITLE: flex和bison简介
+#+AUTHOR: sqlfocus
+
+本文档简要介绍flex和bison的使用，以期对词法分析、语法分析有粗浅的理解；
+另外，词法分析、语法分析也可以用在配置文件解析等场合（如modsecurity）。
+通过此文档，希望可以拓宽视野，为架构程序引入更加强大的开源工具。
+
+* 简介
+flex和bison是用来生成程序的工具，它们所生成的程序可以处理结构化的输入；
+当然最初，它们是用来生成编译器的。
+
+编译器要追溯到50年代了，这个领域一个关键的想法是把分析工作分成两部分，
+词法分析和语法分析。简单说，词法分析把输入分割成一个个有意义的词块儿，
+称为记号（token）；而语法分析则确定这些记号是如何彼此关联的。
+
+在unix中，词法分析的工具是flex（早期为lex），语法分析的工具是bison（
+早期为yacc）。
+
+* 正则表达式
+本小节罗列常用的正则表达式
+  - .     :: 匹配除换行符\n外的任意字符
+  - []    :: 字符类，可匹配方括号内的任意一字符
+  - ^     :: 匹配行首（在方括号内表示补集）
+  - $     :: 匹配行尾
+  - {}    :: 前一个模式可以匹配的最大最小次数
+  - \     :: 转义字符
+  - *     :: 匹配>=0次前一个模式
+  - +     :: 匹配>0次前一个模式
+  - ?     :: 匹配0~1次前一个模式
+  - |     :: 或
+  - "..." :: 引号中的字符基于字面意义解释
+  - ()    :: 组合括号
+  - /     :: 尾部上下文；0/1匹配01中的0,但不匹配0或者02,并且不消耗/后的字符
+
+典型的正则表达式示例：
+  - 实数
+      : [-+]?([0-9]*\.?[0-9]+|[0-9]+\.)
+  -
+  -
+  -
+
+* flex
+词法分析所做的就是在输入中寻找字符的模式；一般利用简洁明了的模式描述
+方式，即正则表达式。
+
+flex程序主要由一系列带有指令的正则表达式组成，它们确定了匹配后相应的动
+作；由flex生成的词法分析器，可以读取输入、匹配输入与所有的正则表达式并
+且执行每次匹配后适当的关联动作。
+
+flex会把所有的正则表达式翻译成一种高效的内部格式，这使它几乎可以同时
+处理所有需要匹配的模式，因此匹配速度可成百倍提高。
+
+*** 结构
+  - 分三部分，以‘%%’分隔。
+  - 自动生成文件lex.yy.c
+
+*** 语法
+  - yylex()
+  - %%
+  - %{ ... %}
+  - yyin                        :: 输入文件句柄
+  - yyrestart()
+  - YY_BUFFER_STATE             :: 更低层次的输入源
+
+*** 如何处理二义性
+大多数flex程序具有二义性，相同的输入可能被多种不同的模式匹配，flex通过
+两个简单的规则解决：
+   - 匹配尽可能多的字符串
+   - 匹配在程序中更早出现的模式
+
+*** 小例子
+编辑文件fb_wc.l，填入如下代码：
+  #+BEGIN_EXAMPLE
+    /* similar to 'wc' of unix */
+    %{
+    int chars = 0;
+    int words = 0;
+    int lines = 0;
+    %}
+    %%
+    [a-zA-Z]+    {words++; chars += strlen(yytext);}
+    \n           {lines++; chars++;}
+    .            {chars++;}
+    %%
+    main(int argc, char **argv)
+    {
+        yylex();
+	printf("%8d%8d%8d\n", lines, words, chars);
+    }
+  #+END_EXAMPLE
+
+按照如下步骤编译、运行，查看输出：
+  #+BEGIN_EXAMPLE
+    $ flex fb_wc.l
+    $ cc lex.yy.c -lfl
+    $ ./a.out
+       just for a test
+       it's right!!!
+       ^D
+      2   7   30
+    $
+  #+END_EXAMPLE
+
+* bison
+bison来源于yacc（yet another compiler compiler），
+
+*** 语法
+  - yyparse()
+  - %token
+  - $$
+  - $1
+  - yylval
+  - yytext
+
+* 联合flex和bison的简单例子 － 计算器
+*** 词法分析器
+编辑文件calc.l，填充内容如下：
+  #+BEGIN_EXAMPLE
+  /*识别用于计算器的记号*/
+  %{
+  #include "calc.tab.h"            /* 由语法解析器提供，定义token及变量 */
+  %}
+
+  %%
+  "+"     {return ADD;}
+  "-"     {return SUB;}
+  "*"     {return MUL;}
+  "/"     {return DIV;}
+  "|"     {return ABS;}
+  [0-9]+  {yylval = atoi(yytext); return NUMBER;}
+  \n      {return EOL;}
+  [ \t]   {/* 忽略空白字符 */}
+  "("     {return OP; }
+  ")"     {return CP; }
+  "//".*  { /* 忽略注释 */ }
+  .       {printf("mystery character %s\n", yytext);}
+
+  %%
+  
+  #+END_EXAMPLE
+
+*** 语法分析器
+编辑文件calc.y，填充内容如下：
+  #+BEGIN_EXAMPLE
+  %{
+  #include <stdio.h>
+  %}
+
+  /* declare tokens */
+  %token NUMBER
+  %token ADD SUB MUL DIV ABS
+  %token OP CP
+  %token EOL
+
+  %%
+
+  calclist: /* 空规则，匹配输入开头 */
+     | calclist exp EOL    {printf(" = %d\n", $2);}  /* EOL代表表达式结束 */
+     ;
+
+  exp: factor
+     | exp ADD factor      { $$ = $1 + $3; }
+     | exp SUB factor      { $$ = $1 - $3; }
+     ;
+
+  factor: term
+     | factor MUL term     { $$ = $1 * $3; }
+     | factor DIV term     { $$ = $1 / $3; }
+     ;
+
+  term: NUMBER
+     | ABS term            { $$ = $2>0?$2:-$2; }
+     | OP exp CP           { $$ = $2; }
+     ;
+
+  %%
+  
+  main(int argc, char **argv)
+  {
+      yyparse();
+  }
+
+  yyerror(char *s)
+  {
+      fprintf(stderr, "error: %s\n", s);
+  }
+
+  #+END_EXAMPLE
+
+*** Makefile
+编辑文件，Makefile，填充内容如下：
+  #+BEGIN_EXAMPLE
+  calc: calc.l calc.y
+          bison -d calc.y
+          flex calc.l
+          cc -o $@ calc.tab.c lex.yy.c -lfl
+  #+END_EXAMPLE
+
+编译执行：
+  #+BEGIN_EXAMPLE
+  $ make
+  $ ./calc
+    2 + 3 * 4
+     = 14
+    1 + 2 * ( 3 + 4 )
+     = 15
+  #+END_EXAMPLE
+
+* 名词解释
+   - lexical analysis :: 词法分析，又称扫描器（scanner）；字符序列-->token
+   - Syntactic analysis :: 语法分析，又称分析器（parsing）；token-->语法结构
+   - AST  :: Abstract syntax tree [[https://en.wikipedia.org/wiki/Abstract_syntax_tree][wiki]]
+   - BNF  :: Backus–Naur Form [[https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form][wiki]]
+   - LLVM :: 编译器框架 [[http://llvm.org/][官网]]
+   - CFG  :: context-free grammar，上下文无关文法；标准格式为BNF
+
+* 参考
+   - 书籍
+      : flex and bison
+
+
+
+
+
