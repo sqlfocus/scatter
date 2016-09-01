@@ -27,11 +27,18 @@ flex和bison是用来生成程序的工具，它们所生成的程序可以处�
   - +     :: 匹配>0次前一个模式
   - ?     :: 匹配0~1次前一个模式
   - |     :: 或
-  - "..." :: 引号中的字符基于字面意义解释
+  - "..." :: 匹配引号内字面意义上的字符
   - ()    :: 组合括号
   - /     :: 尾部上下文；0/1匹配01中的0,但不匹配0或者02,并且不消耗/后的字符
+  - <>    :: 在模式开头出现，括起来的名字或名字列表给定了此模式使用的起始状态
+  - <<EOF>>       :: 特殊模式，匹配文件末尾
+  - (?# comment)  :: perl风格的表达式注释
+  - (?a:pattern)/(?a-x:pattern)      :: perl风格的模式修饰符
+         : i   大小写无关
+         : x   忽略空白字符和c风格注释
+         : s   所有字符当作单行匹配，即.可以匹配\n
 
-典型的正则表达式示例：
+*** 典型的正则表达式
   - 实数
       : [-+]?([0-9]*\.?[0-9]+|[0-9]+\.)
   - 通用字符名
@@ -70,27 +77,43 @@ flex会把所有的正则表达式翻译成一种高效的内部格式，这使�
 处理所有需要匹配的模式，因此匹配速度可成百倍提高。
 
 *** 结构
-  - 分三部分，以‘%%’分隔。
-  - 自动生成文件lex.yy.c
+  - 分三部分，以‘%%’分隔
+     + 定义部分 
+     + 规则部分
+     + 用户子例程
+  - 自带小型的库
+     + 包含辅助例程
+     + cc命令末尾添加 =-lfl= 以链接此库
+     + 它包含不同版本的main()和yywrap()
+  - 自动生成文件lex.yy.c，可通过 =%option outfile= 修改
   - 起始状态默认为0, 即INITIAL
 
 *** 语法
   - BEGIN                       :: 切换到另外一个起始状态
-  - yylex()
-  - %%
-  - %{ ... %}
+  - ECHO                        :: 等价于fprintf(yyout, "%s", yytext)
+  - REJECT                      :: 使得flex退回已经匹配模式的文本
+  - %%                          :: 三大部分的分隔符
+  - %{ ... %}                   :: 定义部分的文字块儿，C代码
   - yyin                        :: 输入文件句柄，默认值stdin
   - yyout                       :: 没有匹配的部分会被拷贝到此
-  - yytext
-  - yyleng
-  - yylval
-  - yyrestart()                 :: 顺序读取多个文件，每打开一个调用此函数一次
-  - YY_BUFFER_STATE             :: 更低层次的处理输入源
+  - yytext                      :: 被已有模式匹配到的token
+  - yyleng                      :: 匹配到的token的长度
+  - YY_BUFFER_STATE             :: 更低层次的输入缓冲区
+  - YY_BUFFER_SIZE              :: 指定缓冲区大小，默认16k
   - %x                          :: 定义起始状态
   - %option case-insensitive    :: 大小写无关
-  - %option nodefault           :: 不添加默认规则
-  - %option noyywrap            :: 不利用库函数yywrap()
+  - %option nodefault           :: 不添加默认规则，如ECHO输出不匹配的字符等
+  - %option noyywrap            :: 不利用库函数 =yywrap()=
+  - %option prefix              :: 指定词法分析器使用的名字前缀，默认 ~yy~
+  - %option outfile             :: 指定 =flex= 编译输出文件明，默认 ~lex.yy.c~
   - %option yylineno            :: 定义此变量保存当前行号，必须手工初始化
+  - input()                     :: 获取输入字符给词法分析器，c++版本 =yyinput()=
+  - unput()                     :: 返回字符给输入流，c++版本 =yyunput()=
+  - yyless()                    :: 推回刚刚读到的记号，比 =unput= 快
+  - yymore()                    :: 使得flex把下一个token添加到当前token中
+  - yylex()                     :: 匹配到模式后，返回调用方；下次调用点时继续
+  - yyrestart()                 :: 顺序读取多个文件，每打开一个调用此函数一次
+  - yy_scan_bytes/_string/buffer()     :: 使得flex可以从字符串读取输入
 
 *** 如何处理二义性
 大多数flex程序具有二义性，相同的输入可能被多种不同的模式匹配，flex通过
@@ -143,23 +166,48 @@ bison分析器可以使用两种分析方法，一种是LALR(1)，另一种是GL
 更容易使用。
 
 *** 结构
-  -和flex一样，也分为三部分：
+  - 和flex一样，也分为三部分，利用 =%%= 分隔：
      + 定义部分，控制信息及执行环境
-     + 规则
-     + c代码
-  - 没有显式的语义动作代码，规则使用默认动作$$ = $1
+     + 规则部分，以 =;= 结尾，左、右部分利用 =:= 分隔
+     + 用户子例程
+  - 没有显式的语义动作代码，规则使用默认动作 =$$ = $1=
+  - 库文件，通常包含main()/yyerror()等函数，使用 =-ly= 链接
+  - 规则中，尽量使用左递归
+  - 利用y.output保存日志
 
 *** 语法
-  - $$            ::
-  - $n            ::
+  - $0/$-1        :: 继承属性， *不建议* 使用
+  - $$            :: 规则左侧的值
+  - $n            :: 规则右侧第n个token的值
+  - @$            :: 语法规则左侧的位置信息
+  - @n            :: 语法规则右侧第n个token第位置信息
+  - YYABORT       :: 检测到严重错误，无法继续，退出
+  - %code [place] {...}  :: 类似于%{...%}，但可指定top/provides/requires等位置
+  - %destructor   :: 特定符号被删除时获取控制权，以便于更安全的释放内存
+  - %glr-parser   :: 告知bison使用GLR风格的语法解析器
+  - %inital-action{}     :: 语法分析器启动时，做某些特定初始化
+  - %language "C++"      :: 设定语言
+  - %locations    :: 开启位置信息支持功能
   - %nonassoc     :: 操作符不具有结合特性，定义优先级，以出现顺序从低到高
   - %left         :: 操作符具有左结合特性，定义优先级
   - %right        :: 操作符具有右结合特性，定义优先级
+  - %prec         :: 调整当前规则操作符的优先级， *不建议* 使用
+  - %name-prefix  :: 更改语法解析器使用的名字前缀，默认 =yy=
+  - %parse-param  :: 为 =yyparse()= 传递参数
+  - %requre "n.m" :: 约定bison的最低版本
   - %start        :: 定义顶层规则，一般为第一条（所以一般不需要此语句）
   - %token        :: 声明记号
-  - %type         :: 为记号声明赋值类型
+  - %type         :: 为非终结符（即规则左部）声明赋值类型
   - %union        :: 声明符号值的类型
-  - yyparse()     ::
+  - yyerror()     :: 报告错误
+  - yyparse()     :: 语法分析器的入口函数
+
+*** 补充
+  - bison支持c++语法分析器
+     + 默认命名空间yy，可通过 =#define namespace= 修改
+     + 默认类名parser，可通过 =#define parser_class_name= 修改
+     + 类主要函数parse()
+     + 生成的文件：file.tab.cxx/file.tab.hxx/stack.hh/location.hh/position.hh
 
 * 联合flex和bison的简单例子 － 计算器
 *** 词法分析器
@@ -270,8 +318,8 @@ bison分析器可以使用两种分析方法，一种是LALR(1)，另一种是GL
    - LLVM :: 编译器框架 [[http://llvm.org/][官网]]
    - CFG  :: context-free grammar，上下文无关文法；标准格式为BNF
    - LHS/RHS :: left/right-hand side, bison的语法规则的左部/右部
-   - 终结符/记号   :: 被词法分析器返回的符号
-   - 非终结符      :: bison的语法规则左部的语法符号
+   - 终结符/记号   :: terminal symbol/token, 被词法分析器返回的符号
+   - 非终结符      :: nonterminal symbol, bison的语法规则左部的语法符号
 
 * 参考
    - 书籍
