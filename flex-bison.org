@@ -77,6 +77,7 @@ flex会把所有的正则表达式翻译成一种高效的内部格式，这使�
 处理所有需要匹配的模式，因此匹配速度可成百倍提高。
 
 *** 结构
+  - 文件名通常以 =.l= 或 =.ll= 结尾
   - 分三部分，以‘%%’分隔
      + 定义部分 
      + 规则部分
@@ -166,6 +167,7 @@ bison分析器可以使用两种分析方法，一种是LALR(1)，另一种是GL
 更容易使用。
 
 *** 结构
+  - 文件名以 =.y= 或 =.yy= 结尾
   - 和flex一样，也分为三部分，利用 =%%= 分隔：
      + 定义部分，控制信息及执行环境
      + 规则部分，以 =;= 结尾，左、右部分利用 =:= 分隔
@@ -182,8 +184,11 @@ bison分析器可以使用两种分析方法，一种是LALR(1)，另一种是GL
   - @$            :: 语法规则左侧的位置信息
   - @n            :: 语法规则右侧第n个token第位置信息
   - YYABORT       :: 检测到严重错误，无法继续，退出
+  - YYSTYPE       :: 类似于 =%define api.value.type= ，仅用于c/c++预处理器
   - %code [place] {...}  :: 类似于%{...%}，但可指定top/provides/requires等位置
+  - %define api.value.type {int}     :: 定义整个程序使用的数据类型，默认 =int=
   - %destructor   :: 特定符号被删除时获取控制权，以便于更安全的释放内存
+  - %empty        :: 明确指定空规则
   - %glr-parser   :: 告知bison使用GLR风格的语法解析器
   - %inital-action{}     :: 语法分析器启动时，做某些特定初始化
   - %language "C++"      :: 设定语言
@@ -195,6 +200,7 @@ bison分析器可以使用两种分析方法，一种是LALR(1)，另一种是GL
   - %name-prefix  :: 更改语法解析器使用的名字前缀，默认 =yy=
   - %parse-param  :: 为 =yyparse()= 传递参数
   - %requre "n.m" :: 约定bison的最低版本
+  - %skeleton "lalr1.cc" :: 选定C++解析器
   - %start        :: 定义顶层规则，一般为第一条（所以一般不需要此语句）
   - %token        :: 声明记号
   - %type         :: 为非终结符（即规则左部）声明赋值类型
@@ -204,10 +210,19 @@ bison分析器可以使用两种分析方法，一种是LALR(1)，另一种是GL
 
 *** 补充
   - bison支持c++语法分析器
-     + 默认命名空间yy，可通过 =#define namespace= 修改
+     + 支持C++语言的解析器， %skeleton "lalr1.cc"
+     + 支持文件生成， =%define=
+     + 支持多变量类型， =%define api.value.type variant=
+         : 后续使用真实类型，如 =%token <std::string> QUOTATION_MARK=
+     + 默认命名空间yy，可通过 =#define api.namespace= 修改
      + 默认类名parser，可通过 =#define parser_class_name= 修改
      + 类主要函数parse()
-     + 生成的文件：file.tab.cxx/file.tab.hxx/stack.hh/location.hh/position.hh
+     + 生成的文件：file.cc/file.hh/stack.hh/location.hh/position.hh
+  - 新版bison如何支持多数据类型
+     + 让bison利用%token/%type赋值进行统计， =%define api.value.type union=
+     + 利用%union {}
+     + 利用 =%define api.value.type {union YYSTYPE}=
+     + 利用 =#define YYSTYPE {union YYSTYPE}=
 
 * 联合flex和bison的简单例子 － 计算器
 *** 词法分析器
