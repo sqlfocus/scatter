@@ -67,10 +67,20 @@
 如果有必要，希望能把每个小知识总结成brief的形式，以便快速回忆；也能够
 为其他人共享！
 
-*** TODO flex与bison
-    DEADLINE: <2016-09-09 Fri> SCHEDULED: <2016-10-07 Fri>
+*** DONE flex与bison
+    CLOSED: [2016-09-12 Mon 17:02] DEADLINE: <2016-09-09 Fri> SCHEDULED: <2016-10-07 Fri>
+    CLOCK: [2016-09-12 Mon 17:06]
+    - CLOSING NOTE [2016-09-12 Mon 17:02] \\
+      细节可参考flex和bison的官网，或《flex & bison》
     CLOCK: [2016-09-08 Thu 17:58]
+如何解析某种格式的配置文件？如果配置文件复杂到需要类似语言的语句描述，如何
+处理？配置文件的解析将异常复杂！
 
+还好，我们有最原始的工具，flex和bison；它们分别是知名的词法解析器和语法解析
+器。flex利用正则语法搜索关键词，把配置文件的行解析成具体的token；然后bison
+可利用设定的语法格式，重新组装这些token，构成可操控的语法树。
+
+很棒的工具，是不是？详细信息参考简介文档[[flex-bison.org]]。
 
 *** TODO epoll模形
 
