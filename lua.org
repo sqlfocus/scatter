@@ -1,0 +1,479 @@
+#+TITLE: lua简介
+#+AUTHOR: sqlfocus
+
+本文档记录lua的学习流程，并摘录lua的基本语法，希望能成为后续温习lua脚本
+语言的重要参考！
+
+* lua简介
+lua是一个小巧的脚本语言，其设计目的是为了嵌入应用程序中，从而为应用程序提供
+灵活的扩展和定制功能。
+  - Lua由标准C编写而成，几乎在所有操作系统和平台上都可以编译、运行
+  - Lua没有提供强大的库，所以不适合作为开发独立应用程序
+  - Lua有一个同时进行的JIT项目，提供在特定平台上的即时编译功能
+  - Lua脚本可以很容易的被C/C++代码调用，也可以反过来调用C/C++的函数
+  - Lua语言的各个版本是不相兼容的
+  - 通过lua或luajit开启交互模式，通过os.exit()退出
+  - UNIX及类unix系统，lua脚本开头可以使用 =#!/usr/bin/env lua=
+
+** 特性
+  - 变量名没有类型，值才有类型，变量名在运行时可与任何类型的值绑定
+        : 变量名由任意字母、数字和下画线构成，不以数字开头
+        : 应避免使用以下画线开头并跟一或多个大写字母的变量名，lua有特殊用途
+  - 语言只提供唯一一种数据结构，称为表(table)
+  - 函数是一等类型,支持匿名函数和正则尾递归
+  - 支持词法定界(lexical scoping)和闭包(closure)
+  - 提供thread类型和结构化的协程(coroutine)机制
+  - 运行期能编译字符串形式的程序文本并载入虚拟机执行
+  - 通过元表(metatable)和元方法(metamethod)提供动态元机制(dynamic meta-mechanism)
+        : 从而允许程序运行时根据需要改变或扩充语法设施的内定语义
+  - 能方便地利用表和动态元机制实现基于原型(prototype-based)的面向对象模型
+  - 从5.1版开始提供了完善的模块机制,从而更好地支持开发大型的应用程序
+
+** luaJIT
+Lua非常高效,它运行得比许多其它脚本(如Perl、Python、Ruby)都快,这点在第三方
+的独立测评中得到了证实。
+
+LuaJIT就是一个为了再榨出一些速度的尝试，它利用即时编译(Just-in Time)技术把
+Lua代码编译成本地机器码后交由CPU直接执行。
+
+LuaJIT是采用C和汇编语言编写的Lua解释器与即时编译器；被设计成全兼容标准的
+Lua5.1语言，同时可选地支持Lua5.2和Lua5.3中的一些不破坏向后兼容性的有用特
+性；LuaJIT支持比标准Lua	5.1语言更多的基本原语和特性,因此功能上也要更加强
+大。
+
+** 安装luaJIT
+  #+BEGIN_EXAMPLE
+  $ wget	http://luajit.org/download/LuaJIT-2.1.0-beta2.tar.gz
+  $ tar	-xvf	LuaJIT-2.1.0-beta2.tar.gz
+  $ cd	LuaJIT-2.1.0-beta2
+  $ make
+  $ make install PREFIX=/home/sqlfocus/Program/bin
+  $ vim ~/.bashrc
+       添加 export PATH=$PATH:/home/sqlfocus/Program/bin
+  $ source ~/.bashrc
+
+  $ luajit -v      显示版本号
+  #+END_EXAMPLE
+
+
+* lua语法
+** lua的基础数据类型
+  - nil     :: 无效值，变量赋值前的默认值；赋值给全局变量等于删除；
+  - boolean :: true/false，lua中只有nil和false为假，其余为真(比如0)
+  - number  :: 实数
+  - string  :: 字符串，使用 '' / "" / [[]] 定义字符串
+  - table   :: 表，实现为关联数组
+  - function :: 函数
+  - userdata :: 自定义类型，主要用于存储由应用程序或C语言创建的新类型
+  - thread   :: 线程
+
+** 特殊符号
+  - ~=      :: 不等于
+  - ..      :: 字符串拼接符
+  - ...     :: 函数变长参数，访问变长实参仍需要利用此符号
+  - _       :: 虚变量，dummy variable，占位符，用于丢弃不需要的变量
+  - --      :: 行注释
+  - --[[    :: 块注释起始
+  - ]]      :: 块注释结束
+  - #       :: 放置在字符串前用于获取字符串长度
+  - {}      :: 构造lua的table数据结构
+  - in      :: for循环的迭代器形式
+  - local   :: 局部符号声明
+  - repeat  :: 类似于do..while，不过结束条件为until为假时
+
+** 知名函数
+  - assert()     :: 检查第一个参数是否为true，true则简单返回第一个参数
+  - dofile()     :: 从文件加载并运行lua代码块
+  - error()      :: 显式的发送错误信息
+  - getmetatable()   :: 获取此数据的元表
+  - ipairs()     :: table的无状态迭代器工厂
+  - loadfile()   :: 从文件加载代码块，只编译不运行
+  - loadstring() :: 从字符串读取代码，只编译不运行
+  - load()       :: 终极的加载函数，一般不使用
+  - module()     :: 用于声明模块儿
+  - pairs()      :: table的迭代器工厂
+  - pcall()      :: 利用此函数包装后，可在lua代码中处理错误
+  - rawget()     :: 获取变量值，绕过元表的__index方法
+  - rawset()     :: 声明新变量，绕过元表的__newindex方法
+  - setfenv()    :: 改变函数的环境
+  - setmetatable()   :: 设置此数据的元表
+  - unpack()     :: 解耦展开数组元素
+
+** 知名table
+  - coroutine    :: 协程的函数集合
+      : .create()  创建新的协程
+      : .status()  查询状态，suspended、running、dead、normal
+      : .resume()  启动
+      : .yield()   自身放弃执行，让出资源，挂起
+  - _G           :: 包含所有的全局变量
+      : 此表在lua中称为环境，environment
+
+** 易混淆知识点
+  - a[x]与a.x的区别
+      : a.x等价于a["x"]
+      : table的统一初始化风格{["x"]=1, [1]=2, ... ,}  <==> {x=1, 2}
+  - a.x()与a:x()的区别
+      : a:x(arg)等价于a.x(a, arg)
+  - Lua数组
+      : 通常以1做为索引的起始值
+      : #arr表示数组长度
+      : 数组可包含空隙，hole，即中间存在为nil的元素
+      : 带空隙数组，#arr值不准确，应利用table.maxn(arr)获取最大正索引
+  - 尽量使用局部变量
+      : 避免污染全局变量空间
+      : 访问速度更快
+      : 作用域结束后，便于垃圾回收器回收
+  - ~local foo = foo~ 的妙用
+      : 利用局部变量保存全局变量的值，加速
+      : 便于后续全局变量的恢复
+  - 多重返回值
+      : Lua允许函数返回多个结果，只需在return关键字后列出所有返回值
+      : Lua会调整返回值数量以匹配不同情形，多则默默丢弃，少则补充nil
+      : unpack()，接受数组作参数，返回数组的所有元素
+  - 函数没有名？
+      : 函数和其他所有值一样都是匿名的
+      : 通常所说的函数名指持有某个函数的变量
+      : function foo()  return 1; end   <==>  foo = function() return 1; end
+  - 闭包，closure
+      : 一个函数位于另一个函数内，内部函数可以访问外部函数的局部变量 ==> 词法域
+      : 此概念属于函数式编程的范畴
+      : 被访问的外部函数的变量，称为非局部变量，non-local variable
+      : 其实这些变量对于内部函数，即非全局变量，也非局部变量
+      : 可以利用闭包实现复杂的功能，如迭代器等
+  - 如何定义递归的局部函数？
+      : 错误的格式如下
+      :    local fact = function(n)
+      :        if n==0 then 
+      :            return 1
+      :        else 
+      :            return n*fact(n-1)     --错误点：编译至此时，局部的fact
+      :        end                        --尚未定义完毕，此处引用里全局的
+      :    end                            --fact，而非函数自身
+      : 正确的格式
+      :    local function fact(n) ...
+      :    或
+      :    local fact
+      :    fact = function(n) ...         --递归时使用局部变量，虽定义未完全
+      :                                   --但执行时可保证正确的值
+  - 错误的尾递归
+      : lua支持尾调用消除，类似于goto，不保存尾调用的栈信息，速度快 + 省内存
+      :
+      : 正确的格式
+      :    function f(x)  return g(x)  end
+      :
+      : 错误的格式
+      :    function f(x)  g(x) end              默默丢弃返回值
+      :    function f(x)  return g(x)+1 end     利用返回值作额外的计算
+      :    function f(x)  return x or g(x) end  调整返回值并作额外计算
+      :    function f(x)  return (g(x)) end     需调整返回值
+  -Lua如何实现动态连接？
+      : ANSI C不支持动态连接，Lua通常不包含无法通过ANSI C实现的机制
+      : 动态连接机制是例外，因此为可移植性，Lua自身在不同平台提供了动态连接机制
+      : 功能的实现集中在package.loadlib()函数，加载指定的库，并链接入Lua
+
+** 高级特性之元表
+通常，Lua中的每个值都有一套预定义的操作集合；不过，可以通过元表修改此值
+的行为，使得其面对一个非预定义的操作时，执行一个指定的操作。在元表中自定
+义的方法，称为元方法。
+  - 从概念上看，元表类似于C++的操作符重载
+  - table和userdata可以拥有独立的元表
+  - 其他类型的值则共享其类型所属的单一元表
+  - 通过setmetatable/getmetatable()函数来设置/获取元表
+  - lua中只能设置table的元表，其他类型值的元表可通过C代码设置
+  - 设置元表的__metatable字段后，其他用户再不能设置、查看集合的元表
+
+*** table的预定义操作
+在lua中可修改的预定义操作有：
+  - __add/__sub/__mul/__div/__unum/__mod/__pow  :: 算术操作符
+  - __concat        :: 连接操作符号 =..=
+  - __eq/__lt/__le  :: 关系操作符
+  - __tostring      :: obj.tostring()方法
+  - __metatable     :: 禁用getmetatable()/setmetatable()函数
+  - __index/__newindex                          :: table访问操作符
+*** 示例
+创建支持union的集合
+  #+BEGIN_EXAMPLE
+  Set = {}
+  local mt = {}
+  
+  function Set.new(l)
+      local set = {}
+      setmetatable(set, mt)          --设置元表
+      for _,v in pairs(l) do
+          set[v] = true
+      end
+      return set
+  end
+ 
+  function Set.union(a, b)           --实现合并操作
+      local res = Set.new()
+      for k in pairs(a) do res[k] = true end
+      for k in pairs(b) do res[k] = true end
+      return resA
+  end
+
+  mt.__add = Set.union               --重载 + 操作符
+
+  实验
+  s1 = Set.new({10, 20, 30, 40})
+  s2 = Set.new({30, 1})
+  s3 = s1 + s2                       --s3结果为{1, 10, 20, 30, 40}
+  #+END_EXAMPLE
+
+** 高级特性之非全局环境
+最知名的环境为全局环境，_G；缺点为它是全局的，任何对它的修改都可能影响程
+序的所有部分。lua5对此进行了改进，允许每个函数拥有自己的环境；可通过函数
+setfenv()实现。
+
+  #+BEGIN_EXAMPLE
+  a = 1
+  setfenv(1, {g=_G})        --1代表当前函数环境
+  g.print(g.a)              --1
+  g.print(a)                --nil
+  #+END_EXAMPLE
+
+  #+BEGIN_EXAMPLE
+  使用继承组装新环境
+  a = 1
+  local newgt = {}          --创建新环境
+  setmetatable(newgt, {__index=_G})
+  setfenv(1, newgt)
+  print(a)                  --1
+
+  a = 10
+  print(a)                  --10
+
+  print(_G.a)               --1
+  #+END_EXAMPLE
+** 高级特性之模块儿
+从用户的观点看，一个模块儿就是一个程序库，可以通过 *require* 函数用来加载模
+块；加载后，就得到了一个table，就像C++的命名空间，包含了模块儿中导出的所有
+东西，如函数和常量。
+  - 标准库是预先加载的，不需要单独加载
+  - require搜索路径存放在变量package.path中，以LUA_PATH初始化
+  - 搜索路径每项利用 =;= 风格
+  - 搜索时，require利用模块儿名替换搜索路径每项中的 =?=
+  #+BEGIN_EXAMPLE
+  require "mod"
+  mod.func()
+  #+END_EXAMPLE
+
+  #+BEGIN_EXAMPLE
+  local m = require "mod"
+  m.func()
+  #+END_EXAMPLE
+
+在Lua中创建一个模块最简单的方法是：创建一个table，并将所有需要导出的函
+数放入其中，最后返回这个table就可以了。
+  #+BEGIN_EXAMPLE
+  local modname = ...              --读取require的参数，当作模块儿名
+  local M = {}                     --定义内部局部模块儿表
+  _G[modname] = M                  --设定导出的表名
+  package.loaded[modname] = M      --相当于尾端的return M语句，因此可省略
+                                     --结尾的return，所有的依赖关系都在开头
+                                     --部分，更清晰
+
+  function M.new(r, i) return {r=r, i=i} end
+  function M.add(c1, c2) return M.new(c1.r + c2.r, c1.i + c2.i) end
+  #+END_EXAMPLE
+
+*** 完整示例
+  #+BEGIN_EXAMPLE
+  以下代码保存在my.lua中
+  local	modname = ...
+  local M = {}
+  _G[modname] = M
+  package.loaded[modname] = M
+  
+  local	function getname()
+     return "Lucy"
+  end
+  
+  function M.greeting()
+     print("hello" .. getname())
+  end
+  #+END_EXAMPLE
+
+  #+BEGIN_EXAMPLE
+  把以下代码保存在main.lua中，然后执行它，调用my.lua模块儿
+  local	fp = require("my")
+  fp.greeting()              -->output: hello Lucy
+  #+END_EXAMPLE
+
+*** 改进
+前置例子的缺点是，当访问同一模块儿中的其他公共实体时，必须限定其名字；并
+且，只要一个函数的状态从私有改为公有，或从公有改为私有，就必须修改调用；
+另外，私有声明很容易遗漏local。
+
+引入环境，让模块儿的主程序体拥有单独的环境，可解决以上问题。
+  #+BEGIN_EXAMPLE
+  local	modname = ...
+  local M = {}
+  _G[modname] = M
+  package.loaded[modname] = M
+  setmetatable(M, {__index=_G})     --通过元表引入原全局变量
+  setfenv(1, M)                     --占用单独的环境
+  
+  local	function getname()
+     return "Lucy"
+  end
+  
+  function greeting()
+     print("hello" .. getname())
+  end
+  #+END_EXAMPLE
+
+  #+BEGIN_EXAMPLE
+  local	modname = ...
+  local M = {}
+  _G[modname] = M
+  package.loaded[modname] = M
+
+  local print = print               --仅引入本模块儿使用的变量
+  setfenv(1, M)
+  
+  local	function getname()
+     return "Lucy"
+  end
+  
+  function greeting()
+     print("hello" .. getname())
+  end
+  #+END_EXAMPLE
+
+  #+BEGIN_EXAMPLE
+  lua5.1提供了新概念，module()函数
+  
+  module(..., package.seeall)       --和前置例子效果一致
+
+  local	function getname()
+     return "Lucy"
+  end
+  
+  function greeting()
+     print("hello" .. getname())
+  end
+  #+END_EXAMPLE
+
+** 高级特性之面向对象
+lua没有明确提供面向对象编程的方法，不过利用table可以仿真面向对象编程。
+lua没有类的概念，每个对象只能自定义行为和形态；不过要在lua中模拟类也
+并不困难，可以参考基于原型的语言，如javascript等；原型也是一种常规的
+对象，当其他对象遇到一个未知操作时，会查找原型对象。
+
+  #+BEGIN_EXAMPLE
+  实现原型很简单，可以通过设置元表实现；a上没有的操作就会在b上查找，
+  b可以称为a的类。
+
+  setmetatable(a, {__index = b})
+  #+END_EXAMPLE
+
+*** 类继承
+***
+
+* 知名库模块儿
+  - string库        :: 包含强大的字符操作函数
+  - table库         :: 包含表辅助函数
+  - math库          :: 数学库
+  - io库            :: 文件操作
+  - ffi库           :: 最重要的扩展库，允许从纯lua调用c函数
+
+
+* 典型应用
+** 利用具名实参读取文件数据
+人们往往认为写数据比读数据简单很多，因为写一个文件时，对写的内容拥有完全的
+控制权；但读一个文件，却无从得知会读到的内容。
+
+我们可以借助table构造式来定义数据格式，只需要在写数据时作一点额外的工作，读
+数据就会变得相当容易。这项技术就是把数据做为lua代码来输出，当运行这些代码时，
+lua也就读取了数据。
+
+#+BEGIN_EXAMPLE
+原始数据
+  "lisongqing"  32  1984
+  "fanlin"      33  1983
+
+现组织为文件data，格式如下：
+  Entry{
+      "lisonqging",
+      32,
+      1984,
+  }
+  Entry{
+      "fanlin",
+      33,
+      1983,
+  }
+
+读取文件的lua代码
+  local count = 0
+  function Entry(_) count = count+1 end
+  dofile("data")
+  print("number of entries: " .. count)
+
+注意：
+  1. Entry{<code>}  <===>  Entry({<code>})
+  2. 拓展本示例可以实现更加复杂的功能
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+采用具名参数的形式进一步改进data文件的格式，如下：
+  Entry{
+      name = "lisonqging",
+      age = 32,
+      year = 1984,
+  }
+  Entry{
+      name = "fanlin",
+      age = 33,
+      year = 1983,
+  }
+
+改进的处理函数：
+  local people = {}
+  function Entry(arg) if arg.name then people[arg.name] = true end
+  dofile("data")
+  for name in pairs(people) do print(name) end
+
+备注：
+  1. 此格式下，关键字次序不再重要
+  2. 每个信息块儿可以拥有不同的关键字
+  3. 处理更加灵活
+#+END_EXAMPLE
+
+** 序列化
+通常需要串行化一些数据，然后才能将其存储到一个文件中，或者通过网络发送
+出去；串行化后的数据可以用lua代码表示，这样当运行这些代码时，存储的数据
+就可以在读取程序中得到重构了。
+
+比如全局变量，可以串行化为 =varname = <exp>= ，其中varname为变量名，
+=<exp>= 为计算变量值的语句。
+
+#+BEGIN_EXAMPLE
+串行化无环table的代码如下：
+  function serialize(o)
+      if type(o) == "number" then
+          io.write(o)                          --数字直接输出
+      elseif type(o) == "string" then
+          io.write(string.format("%q", o))     --%q选项可以用于转义
+      elseif type(o) == "table" then
+          io.write("{\n")                      --表输出
+          for k,v in pairs(o) do
+              io.write(" ", k, " = ")
+              serialize(v)
+              io.write(",\n")
+          end
+          io.write("}\n")
+      else
+          error("cannot serialize a " .. type(o))
+      end
+  end
+#+END_EXAMPLE
+
+
+* 参考
+  - OpenResty最佳实践
+  - [[http://luajit.org][luaJIT官网]]
+  - [[http://www.lua.org/][lua官网]]
+
+
