@@ -190,6 +190,7 @@ Lua5.1语言，同时可选地支持Lua5.2和Lua5.3中的一些不破坏向后�
   - __tostring      :: obj.tostring()方法
   - __metatable     :: 禁用getmetatable()/setmetatable()函数
   - __index/__newindex                          :: table访问操作符
+
 *** 示例
 创建支持union的集合
   #+BEGIN_EXAMPLE
@@ -369,14 +370,88 @@ lua没有类的概念，每个对象只能自定义行为和形态；不过要�
   #+END_EXAMPLE
 
 *** 类继承
-***
+lua可以通过元表从其它对象获取方法，这种行为就是一种继承。
+
+  #+BEGIN_EXAMPLE
+  仿真父类对象
+  Account ＝ {balance = 0}
+
+  function Account:new(o)
+      o = o or {}               --用户没有提供则创建
+      setmetatable(o, self)     --设置o的元表为Account
+      self.__index = self       --最终等价于setmetatable(o, {__index=Account})
+
+      return o
+  end
+
+  function Account:deposit(v)
+      self.balance = self.balance + v
+  end
+
+  function Account:withdraw(v)
+      if v>self.balance then
+          error("insufficient funds")
+      end
+      self.balance = self.balance - v
+  end
+
+  继承并重定义父类方法
+  SpecialAccount = Account:new()
+  
+  function SpecialAccount:withdraw(v)
+     if v-self.balance >= self:getLimit() then
+         error("insufficient funds")
+     end
+     self.balance = self.balance - v
+  end
+
+  function SpecialAccount:getlimit()
+      return self.limit or 0
+  end
+
+  继承对象的实例化
+  s = SpecialAccount:new{limit=1000.00}
+  
+  执行
+  s:deposit(100)
+  #+END_EXAMPLE
+
+*** 类封装、私密性
+大多数人认为封装（私密性）是面向对象语言不可或缺的一部分；每个对象的状态都应
+该由它自身掌握。lua在设计对象时，并没有提供封装机制；但它足够灵活，可以通过
+其它方式实现访问控制。
+
+基本思想是，通过两个table表示一个对象，一个用来保存对象的状态，另一个用来保
+存对象的操作，即接口，对象本身是通过第二个表来访问的；为了实现访问控制，表示
+状态的table不保存在其它的表中，而只是保存在方法的closure中。
+
+  #+BEGIN_EXAMPLE
+  构造对象的工厂
+  function newAccount(initBalance)
+      local self = {balance = initBalance}    --状态表，在方法的closure中
+      
+      local withdraw = function (v)
+                           self.balance = self.balance -v
+                       end
+      local deposit  = function (v)
+                           self.balance = self.balance + v
+                       end
+      return {                                --接口表
+          withdraw = withdraw,
+          deposit = deposit,
+      }
+  end
+  #+END_EXAMPLE
+
 
 * 知名库模块儿
+  - debug库         :: 调试库
+  - ffi库           :: 最重要的扩展库，允许从纯lua调用c函数
+  - io库            :: 文件操作
+  - math库          :: 数学库
+  - os库            :: 系统库
   - string库        :: 包含强大的字符操作函数
   - table库         :: 包含表辅助函数
-  - math库          :: 数学库
-  - io库            :: 文件操作
-  - ffi库           :: 最重要的扩展库，允许从纯lua调用c函数
 
 
 * 典型应用
@@ -471,8 +546,17 @@ lua也就读取了数据。
 #+END_EXAMPLE
 
 
+
+* 与C交互的C API
+无论lua程序处于应用程序代码和库代码中哪种情形，与C语言交互都是通过C API
+完成的。C API是一组能使C和lua交互的函数，包括读写lua全局变量、调用lua函
+数、运行lua代码、注册C函数以供lua调用等。
+
+lua和c通信主要靠一个虚拟栈，可用于交互数据、暂存中间结果等。
+
 * 参考
   - OpenResty最佳实践
+  - lua程序设计
   - [[http://luajit.org][luaJIT官网]]
   - [[http://www.lua.org/][lua官网]]
 
