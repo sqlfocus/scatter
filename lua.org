@@ -20,7 +20,7 @@ lua是一个小巧的脚本语言，其设计目的是为了嵌入应用程序�
         : 变量名由任意字母、数字和下画线构成，不以数字开头
         : 应避免使用以下画线开头并跟一或多个大写字母的变量名，lua有特殊用途
   - 语言只提供唯一一种数据结构，称为表(table)
-  - 函数是一等类型,支持匿名函数和正则尾递归
+  - 函数是一等类型(和number等基础类型同级别),支持匿名函数和正则尾递归
   - 支持词法定界(lexical scoping)和闭包(closure)
   - 提供thread类型和结构化的协程(coroutine)机制
   - 运行期能编译字符串形式的程序文本并载入虚拟机执行
@@ -552,12 +552,448 @@ lua也就读取了数据。
 完成的。C API是一组能使C和lua交互的函数，包括读写lua全局变量、调用lua函
 数、运行lua代码、注册C函数以供lua调用等。
 
-lua和c通信主要靠一个虚拟栈，可用于交互数据、暂存中间结果等。
+lua和c通信主要靠一个虚拟栈，可用于交互数据、暂存中间结果等。lua.h定义了
+提供的基础函数，包括创建lua环境、调用lua函数、读写lua全局变量、以及注册
+供lua调用的新函数等，它们基本都以lua_开头；luaxlib.h定义了辅助库提供的
+函数，它们都以luaL_开头，本库是一个利用lua.h提供的API编写的高度抽象层，
+lua所有的标准库都用到了此辅助库。
+
+** 示例，C调用lua
+  #+BEGIN_EXAMPLE
+  保存在fact.lua文件，做为被调用的脚本
+  function fact (n)
+    if n==0 then
+        return 1
+    else
+        return n*fact(n-1)
+    end
+  end
+  #+END_EXAMPLE
+
+  #+BEGIN_EXAMPLE
+  保存为fact.c，做为应用程序
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h>
+  #include "lua.h"
+  #include "lualib.h"
+  #include "lauxlib.h"
+  
+  void error (lua_State *L, const char *fmt, ...)
+  {
+    va_list argp;
+    
+    va_start(argp, fmt);
+    vfprintf(stderr, fmt, argp);
+    va_end(argp);
+  
+    lua_close(L);
+    exit(EXIT_FAILURE);
+  }
+  
+  int fact(lua_State *L, int n)
+  {
+    int res;
+  
+    lua_getglobal(L, "fact");          /* 待调用lua函数压栈 */
+    lua_pushnumber(L, n);              /* 第一个参数压栈 */
+  
+    if (lua_pcall(L, 1, 1, 0) != 0) {  /* 调用lua，1参数，1结果 */
+        error(L, "error from func 'f': %s\n", lua_tostring(L, -1));
+    }
+  
+    if (!lua_isnumber(L, -1)) {        /* 检查栈顶，返回值 */
+        error(L, "func 'f' must return a number\n");
+    }
+  
+    res = lua_tonumber(L, -1);
+    lua_pop(L, 1);                     /* 弹出返回值，1代表弹出的元素个数 */
+  
+    return res;
+  }
+  
+  /* 编译指令： gcc fact.c -I/home/sqlfocus/Program/include/luajit-2.1 
+                           -L/home/sqlfocus/Program/lib -lluajit-5.1 
+                           -o fact_exe
+     执行指令： ./fact_exe 3 
+  */
+  int main(int argc, char **argv)
+  {
+    int res;
+    int num;
+    const char *fact_file = "fact.lua";
+    lua_State *L = luaL_newstate();    /* 打开lua */
+    
+    luaL_openlibs(L);                  /* 打开标准库 */
+    if (luaL_loadfile(L, fact_file) || lua_pcall(L, 0, 0, 0)) {
+                                       /* 加载lua脚本 */
+        error(L, "cannot load lua file, %s\n", fact_file);
+    }
+  
+    num = argc > 1 ? atoi(argv[1]) : 4;
+    res = fact(L, num);                /* 调用lua脚本 */
+    printf("fact of %d is %d\n", num, res);
+  
+    lua_close(L);                      /* 关闭lua */
+    return 0;
+  }
+  #+END_EXAMPLE
+
+  #+BEGIN_EXAMPLE
+  编译执行
+  $ gcc ...
+  $ ./fact_exe 3
+       --->  fact of 3 is 6
+  #+END_EXAMPLE
+
+** 示例，lua调用C
+当lua调用C函数时，也使用一个与C语言调用lua时相同的栈；C函数从栈中获取
+函数参数，并将结果压入栈中；为了在栈中将函数结果与其他值分开，C函数还
+应该返回其压入栈中结果的数量。
+
+栈不是全局性的结构，每个函数都有自己的局部私有栈；当lua调用一个C函数
+时，第一个参数总是这个局部栈的索引1。
+
+*** lua调用C库
+#+BEGIN_EXAMPLE
+保存在文件fact.lua中
+  local M = require "mylib"          --将mylib.so库链接到lua，并寻找
+                                     --luaopen_mylib()函数，注册此函数，
+                                     --随后调用它，以打开模块儿
+
+  local num = ... or 3               --获取命令行参数，默认值3
+  num = tonumber(num)
+  
+  local i = 1
+  while i<=num do
+    print(M.fact(i))                 --调用C动态库方法
+    i = i + 1
+  end
+  
+保存到mylib.c中
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h>
+  #include "lua.h"
+  #include "lualib.h"
+  #include "lauxlib.h"
+  
+  static int fact(lua_State *L)
+  {
+    int res = 1;
+    int n = lua_tonumber(L, 1);       /* 获取传入的参数 */
+    
+    for (int i=1; i<=n; i++) {
+        res *= i;
+    }
+  
+    lua_pushnumber(L, res);           /* 回传结果 */
+    
+    return 1;
+  }
+  
+  static const struct luaL_Reg mylib[] = {
+    {"fact", fact},                   /* 定义输出的函数 */
+    {NULL, NULL}
+  };
+  
+  int luaopen_mylib (lua_State *L) {  /* 注册函数集到lua环境 */
+    luaL_register(L, "mylib", mylib);
+    return 1;
+  }
+
+编译.c为.so库
+  $ gcc mylib.c -I/home/sqlfocus/Program/include/luajit-2.1 
+                -fPIC --shared -o mylib.so
+
+运行.lua脚本
+  $ export LUA_CPATH=/home/sqlfocus/work/mylib.so
+  $ luajit fact.lua 3
+#+END_EXAMPLE
+
+*** lua调用C主程序的函数
+#+BEGIN_EXAMPLE
+  保存到fact.lua脚本
+  local M = require "mylib"      --引入mylib库
+
+  function fact_lua(num)
+    local i = 1
+    while i<=num do
+        print(M.fact(i))         --调用库函数
+        i = i + 1
+    end
+
+    return 0
+  end
+  
+  保存到fact.c文件，当作应用程序
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h>
+  #include "lua.h"
+  #include "lualib.h"
+  #include "lauxlib.h"
+
+  void error (lua_State *L, const char *fmt, ...)
+  {
+    va_list argp;
+    
+    va_start(argp, fmt);
+    vfprintf(stderr, fmt, argp);
+    va_end(argp);
+  
+    lua_close(L);
+    exit(EXIT_FAILURE);
+  }
+
+  static int fact(lua_State *L)
+  {
+    int res = 1;
+    int n = lua_tonumber(L, 1);       /* 获取传入的参数 */
+    
+    for (int i=1; i<=n; i++) {
+        res *= i;
+    }
+
+    lua_pushnumber(L, res);           /* 回传结果 */
+    
+    return 1;
+  }
+
+  static const struct luaL_Reg mylib[] = {
+    {"fact", fact},
+    {NULL, NULL}
+  };
+  int luaopen_mylib (lua_State *L) {
+    luaL_register(L, "mylib", mylib);
+    return 1;
+  }
+
+  int main(int argc, char **argv)
+  {
+    int num;
+    int res;
+    const char *fact_file = "fact.lua";
+    lua_State *L = luaL_newstate();    /* 打开lua */
+    
+    luaL_openlibs(L);                  /* 打开标准库 */
+    luaopen_mylib(L);                  /* 注册函数到lua环境 */
+    
+    if (luaL_loadfile(L, fact_file) || lua_pcall(L, 0, 0, 0)) {
+                                       /* 加载lua脚本 */
+        error(L, "cannot load lua file, %s\n", fact_file);
+    }
+  
+    num = argc > 1 ? atoi(argv[1]) : 4;
+    lua_getglobal(L, "fact_lua");      /* 待调用lua函数压栈 */
+    lua_pushnumber(L, num);            /* 第一个参数压栈 */
+  
+    if (lua_pcall(L, 1, 1, 0) != 0) {  /* 调用lua，1参数，1结果 */
+        error(L, "error from func 'f': %s\n", lua_tostring(L, -1));
+    }
+  
+    if (!lua_isnumber(L, -1)) {        /* 检查栈顶，返回值 */
+        error(L, "func 'f' must return a number\n");
+    }
+    res = lua_tonumber(L, -1);
+    lua_pop(L, 1);                     /* 弹出返回值，1代表弹出的元素个数 */
+    printf("fact_lua retval is %d\n", res);
+  
+    lua_close(L);                      /* 关闭lua */
+
+    return 0;
+  }
+
+  编译C程序
+  $ gcc fact.c -I/home/sqlfocus/Program/include/luajit-2.1 
+               -L/home/sqlfocus/Program/lib -lluajit-5.1 -o fact
+  
+  运行
+  $ export LD_LIBRARY_PATH=/home/sqlfocus/Program/lib
+  $ ./fact
+#+END_EXAMPLE
+
+
+* C函数保存状态
+通常，C函数需要保存一些非局部的数据，这些数据的生存时间会比C函数的执行
+更久，在C语言中通常利用全局变量或静态变量来达成这个目的。但为lua编写库
+函数时，这不是好办法：
+   - 无法在C中保存普通的lua对象
+   - 无法用于多个lua状态
+
+对应Lua函数三个存放非局部变量的方法，C API也有三种方式：
+   - 注册表      ===     全局变量
+   - 环境        ===     函数环境
+   - upvalue     ===     非局部变量
+
+** 注册表
+全局table，只能被C代码访问；可以用它保存模块儿间共享的数据。
+  - 位于伪索引LUA_REGISTRYINDEX上
+  - 是一个普通的lua table
+  - 所有C模块儿共享它，因此key值需紧慎选择，以避免冲突
+  - key可以使用静态变量的地址，链接器保证唯一
+  
+  #+BEGIN_EXAMPLE
+  保存字符串
+  lua_pushlightuserdata(L, (void*) &key);   /* 压入地址 */
+  lua_pushstring(L, mystr);                 /* 压入值 */
+  lua_settable(L, LUA_REGISTRYINDEX);       /* registry[&key] = mystr */
+  #+END_EXAMPLE
+
+  #+BEGIN_EXAMPLE
+  检索字符串
+  lua_pushlightuserdata(L, (void*) &key);   /* 压入地址 */
+  lua_gettable(L, LUA_REGISTRYINDEX);       /* 检索值 */
+  mystr = lua_tostring(L, -1);              /* 转换成字符串 */
+  #+END_EXAMPLE
+
+** 环境
+可用于保存某个模块儿的私有数据，可在模块儿内的函数间共享
+  - 从lua5.1开始支持
+  - 伪索引为LUA_ENVIRONINDEX
+  - *推荐使用*
+
+  #+BEGIN_EXAMPLE
+  int luaopen_foo(lua_State *L)
+  {
+      lua_newtable(L);                         //创建模块儿环境
+      lua_replace(L, LUA_ENVIRONINDEX);        //替换成新创建的环境
+
+      luaL_register(L, <库名>, <函数列表>);    //注册函数，它们共享新环境
+      ...
+  }
+  #+END_EXAMPLE
+
+** upvalue
+与特定函数关联的Lua值，类似于C语言中的静态变量机制。
+   - 与单个函数关联
+   - 每个函数可与任意数量的upvalue关联
+   - 每个upvalue保存一个lua值
+   - 这种关联称为C Closure
+
+  #+BEGIN_EXAMPLE
+  /* 前向声明 */
+  static int counter(lua_State *L);
+  
+  /* 工厂函数 */
+  int newCounter(lua_State *L)
+  {
+      lua_pushinteger(L, 0);                 //upvalue的初始值
+      lua_pushcclosure(L, &counter, 1);      //每个counter关联一个upvalue
+
+      return 1;
+  }
+
+  /* 定义 */
+  static int counter(lua_State *L) {
+      int val = lua_tointeger(L, lua_upvalueindex(1));  //获取upvalue
+      lua_pushinteger(L, ++val);                        //更新并压栈
+      lua_pushvalue(L, -1);                             //复制更新后的值并压栈
+      lua_replace(L, lua_upvalueindex(1));              //更新upvalue，并pop
+     
+      return 1;
+  }
+  #+END_EXAMPLE
+
+
+* 用户自定义数据类型
+可以通过C语言的自定义类型，扩展lua；lua提供了userdata基本类型，以支持
+自定义扩展。
+  - userdata提供了一块原始的内存区域
+  - lua中没有为userdata提供任何预定义操作
+  - 通过元表的__gc方法，在内存回收过程中释放关键资源，比如IO fd等
+
+** 示例
+通过一个简单的示例，布尔数组，来了解userdata的使用。
+
+  #+BEGIN_EXAMPLE
+  #include <limits.h>
+
+  #define BITS_PER_WORD  (CHAR_BIT * sizeof(unsigned int))
+  #define I_WORD(i)  ((unsigned int)(i)/BITS_PER_WORD)
+  #define I_BIT(i)  (1<<((unsigned int)(i)%BITS_PER_WORD))
+
+  typedef struct NumArray {
+      int size;
+      unsigned int values[1];           /* 可变部分 */
+  };
+  #+END_EXAMPLE
+  
+  #+BEGIN_EXAMPLE
+  /* 检查指定参数的元表类型是否匹配，匹配则返回参数的指针 */
+  #define checkarray (L) \
+       (NumArray *) luaL_checkudata(L, 1, "LuaBook.array")
+
+  /* 新建布尔数组 */
+  static int newarray(lua_State *L) {
+      int i,n;
+      size_t nbytes;
+      NumArray *a;
+   
+      n = luaL_checkint(L, -1);                       /* 获取参数 */
+      nbytes = sizeof(NumArray) + I_WORD(n-1) * sizeof(unsigned int);
+      a = (NumArray *)lua_newuserdata(L, nbytes);     /* 创建userdata */
+
+      a->size = n;
+      for (int i=0; i<I_WORD(n-1); i++) {             /* 初始化 */
+          a->values[i] = 0;
+      }
+
+      luaL_getmetatable(L, "LuaBook.array");          /* 为新建数组设置元表 */
+      lua_setmetatable(L, -2);
+
+      return 1;                                       /* 新的userdata已在栈上 */
+  }
+  
+  /* 设置某个位置的BIT位 */
+  static int setarray(lua_State *L) {
+      NumArray *a = checkarray(L);                   /* 检测元表是否一致 */
+      int index = luaL_checkint(L, 2) - 1;
+      
+      if (lua_toboolean(L, 3)) {
+          a->value[I_WORD(index)] |= I_BIT(index);   /* 设置bit */
+      } else {
+          a->value[I_WORD(index)] &= ~I_BIT(index);  /* 重置bit */
+      }
+
+      return 0;
+  }
+  
+  /* 注册C模块儿函数 */
+  static const struct luaL_Reg arrayLib_f[] = {      /* 普通函数 */
+      {"new", newarray},
+      {NULL, NULL}
+  };
+  static const struct luaL_Reg arrayLib_m[] = {      /* 接口函数 */
+      {"set", setarray},
+      {"__newindex", setarray},                      /* 使对象具有数组访问格式 */
+      {NULL, NULL}
+  };
+  int luaopen_array (lua_State *L) {
+      luaL_newmetatable(L, "LuaBook.array");         /* 设置元表 */
+      lua_pushvalue(L, -1);
+      lua_setfield(L, -2, "__index");                /* 元表.__index = 元表 */
+
+      luaL_register(L, "array", arrayLib_f);         /* 通用函数注册到array表 */
+      luaL_register(L, NULL, arrayLib_m);            /* 接口直接注册到元表 */
+      return 1;
+  }
+  #+END_EXAMPLE
+
+  #+BEGIN_EXAMPLE
+  使用
+  a = array.new(1000)
+  a.set(a, 10, false)                                /* 接口注册到元表，使得 */
+                                                     /* a具有面向对象的风格 */
+  a[10] = false                                      /* 数组风格 */
+  #+END_EXAMPLE                                      
+
 
 * 参考
   - OpenResty最佳实践
   - lua程序设计
   - [[http://luajit.org][luaJIT官网]]
   - [[http://www.lua.org/][lua官网]]
+  - [[https://www.lua.org/manual/5.1/][手册]]
 
 
