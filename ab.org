@@ -1,0 +1,119 @@
+#+TITLE: 网站性能测试工具
+#+AUTHOR: sqlfocus
+
+本文档记录WEB性能测试工具AB的使用，以备后续查阅。
+
+
+* 简介
+ApacheBench(ab)是用于HTTP web服务器性能测试的命令行程序，最初设计来测试
+apache HTTP服务器，现在也可以用来测试其他类型的web服务器，如nginx等。
+
+ab仅使用一个操作系统级别的线程，即使通过-c参数设置了并发度，也不会使用多
+个线程；因此，当在多核高性能服务器上使用ab时，需要启动多个ab实例(进程)，
+以达到更高的性能，尽可能满足测试需求。
+
+* 安装
+  - yum -y install httpd-tools             :: centos
+  - apt-get install apache2-utils          :: ubuntu
+
+* 参数简介
+  - -n               :: 发起的请求总量
+  - -c               :: 一次发出的请求数，请求并发度
+  - -t               :: 等待测试的最长时间，单位秒
+  - -b               :: TCP的发送、接收缓存，单位bytes
+  - -p               :: 包含POST发送内容的文件名(配合-T使用)
+  - -T               :: POST的content-type，默认text/plain
+  - -f               :: 指定SSL/TLS协议
+  - -Z               :: 指定SSL/TLS的cipher suite(加密套件)
+  - -k               :: 启用HTTP的keepalive特性
+
+* 性能指标
+** 吞吐率(request per second)
+  - 服务器并发处理能力的量化描述，单位是reqs/s
+  - 在某个并发用户数下单位时间内处理的请求数
+  - 某个并发用户数下单位时间内能处理的最大请求数，称为最大吞吐率
+
+** 并发连接数(number of current connection)
+  - 某个时刻服务器所接受的请求数目
+
+** 并发用户数(concurrent level)
+  - 注意和并发连接数之间的区别
+  - 一个用户可能同时会产生多个会话，也即连接数
+      : 在HTTP/1.1下，IE7支持两个并发连接，IE8支持6个并发连接
+      : FireFox3支持4个并发连接，所以相应的，我们的并发用户数
+      : 就得除以这个基数
+
+** 用户平均请求等待时间(Time per request)
+  - 处理完成所有请求数所花费的时间/(总请求数/并发用户数)
+
+** 服务器平均请求等待时间(Time per request:across all concurrent requests)
+  - 处理完成所有请求数所花费的时间/总请求数
+  - 吞吐率的倒数
+  - 用户平均请求等待时间/并发用户数
+
+* 示例
+  #+BEGIN_EXAMPLE
+  $ ab -n 10 -c 1 http://www.baidu.com/            注意不要忘掉最后的'/'
+  #+END_EXAMPLE
+
+  #+BEGIN_EXAMPLE
+  ###对baidu.com进行10总请求，1并发度
+  [root@LetvWebServer-3355E8 ~]# ab -n 10 -c 1 www.baidu.com/
+  This is ApacheBench, Version 2.3 <$Revision: 655654 $>
+  Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+  Licensed to The Apache Software Foundation, http://www.apache.org/
+
+  Benchmarking www.baidu.com (be patient).....done
+  
+  
+  Server Software:        BWS/1.1                 被测试服务器的软件名
+  Server Hostname:        www.baidu.com           请求的URL主机名
+  Server Port:            80                      被测试服务器的端口号
+  
+  Document Path:          /                       URL的根绝对路径
+  Document Length:        100179 bytes            HTTP响应数据的正文长度
+  
+  Concurrency Level:      1                       并发度
+  Time taken for tests:   0.146 seconds           整个测试持续时间
+  Complete requests:      10                      完成的请求数量
+  Failed requests:        9                       失败的数量
+   (Connect: 0, Receive: 0, Length: 9, Exceptions: 0)
+  Write errors:           0
+  Total transferred:      1009792 bytes           所有请求的数据长度总和
+  HTML transferred:       1000052 bytes           所有请求的正文长度总和
+  Requests per second:    68.34 [#/sec] (mean)    平均每秒处理的请求
+  Time per request:       14.633 [ms] (mean)      平均每个请求处理时间，
+                                                  指定并发度的次数算一次请求
+  Time per request:       14.633 [ms] (mean, across all concurrent requests)
+                                                  平均每个请求处理时间
+  Transfer rate:          6738.96 [Kbytes/sec] received
+                                                  单位时间内从服务器获取的数据长度
+  
+  Connection Times (ms)
+              min  mean[+/-sd] median   max
+  Connect:        2    2   0.2      2       2
+  Processing:    11   12   1.7     12      16
+  Waiting:        3    4   0.4      4       5
+  Total:         13   15   1.8     14      18
+  
+  Percentage of the requests served within a certain time (ms)
+  在指定时间内，完成的请求百分比
+  50%     14
+  66%     14
+  75%     15
+  80%     17
+  90%     18
+  95%     18
+  98%     18
+  99%     18
+  100%     18 (longest request)              所有请求中，最长请求时间间隔18ms
+  [root@LetvWebServer-3355E8 ~]#
+  #+END_EXAMPLE
+
+
+* 参考
+  - [[https://en.wikipedia.org/wiki/ApacheBench][wiki]]
+
+
+
+
