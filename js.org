@@ -1,0 +1,47 @@
+#+TITLE: JS简介
+#+AUTHOR: sqlfocus
+
+本文档摘录javascript语言细节，备忘，以便后续快速查阅；当然更细节的部分
+建议查询后续参考的经典书籍。
+
+
+
+* 基本类型
+  - number
+     : 有三个特殊值，Infinity/-Infinity/NaN
+     : Infinity/-Infinity，代表正负无穷；不过不能太信任此值，不是数学可靠的
+     : NaN，not a number，尽管它是number类型的值；常用于0/0等
+  - string
+  - boolean
+     : 仅有一个值不等于自身，NaN
+  - object
+  - function
+  - undefined value
+     : null/undefined用于标识缺失有意义的值
+     : 这两个值大部份情况下可互换使用
+
+* 知名函数及操作符
+  - typeof               :: 操作符，类似于+/-等，返回值的类型字符串
+  - ===/!==              :: 逻辑比较，避免隐式类型转换 
+
+* 易混淆点
+  - 隐式类型转换
+    : 当操作符应用于错误的类型值时，js会默默转换此值为它所希望的类型；
+    : 这些转换由一些内置的规则决定，通常情况下，此行为不是编程者所预期的；
+    : 如，console.log("5" - 1)   ===>  4
+    : 如，console.log(8 * null)  ===>  0
+    : 如，console.log("" == false)  ===>  true
+  -
+
+
+* 参考
+  - <<Eloquent JavaScript>>
+  - <<JavaScript高级程序设计>>
+  - 
+  -
+  -
+
+
+
+
+
