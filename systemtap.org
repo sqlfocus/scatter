@@ -1,0 +1,14 @@
+#+TITLE: 系统监控工具systemtap简介
+#+AUTHOR: sqlfocus
+
+
+* 简介
+
+
+
+* 参考
+  - [[https://sourceware.org/systemtap/][官网]]
+  - [[https://sourceware.org/systemtap/wiki][wiki]]
+
+
+

@@ -67,17 +67,11 @@ location [=|~|~*|^~] =/uri/= {...}，其中
   - [[openresty最佳实践]]
   - [[http://nginx.org/][官网]]
 
-
 * openresty
-
-** 执行阶段
-  - set_by_lua            :: 流程分支处理判断变量初始化
-  - rewrite_by_lua        :: 转发、重定向、缓存等功能
-  - access_by_lua         :: IP准入、接口权限等情况集中处理
-  - content_by_lua        :: 内容生成
-  - header_filter_by_lua  :: 应答HTTP过滤处理
-  - body_filter_by_lua    :: 应答BODY过滤处理
-  - log_by_lua            :: 会话完成后本地异步完成日志记录
+openresty整合了nginx + lua，也整合了它们的优势；有nginx的高性能，也带来了
+lua的便捷式开发；并以lua语言开发了许多第三方模块儿，极大的丰富了lua插件开
+发库。另外，openresty不仅仅是引入了lua，而是依靠两者的整合，提供了一套高
+性能、异步非阻塞的服务器端开发框架。
 
 ** 安装
 注意，openresty源码包已经包含了nginx和luajit的安装包，因此它们不需要单独安装。
@@ -91,6 +85,15 @@ location [=|~|~*|^~] =/uri/= {...}，其中
   $ make
   $ make install
   #+END_EXAMPLE
+
+** 执行阶段
+  - set_by_lua            :: 流程分支处理判断变量初始化
+  - rewrite_by_lua        :: 转发、重定向、缓存等功能
+  - access_by_lua         :: IP准入、接口权限等情况集中处理
+  - content_by_lua        :: 内容生成
+  - header_filter_by_lua  :: 应答HTTP过滤处理
+  - body_filter_by_lua    :: 应答BODY过滤处理
+  - log_by_lua            :: 会话完成后本地异步完成日志记录
 
 ** 简单示例
 OpenResty安装之后就有配置文件及相关的目录的，为了工作目录与安装目录互不干扰，
@@ -128,40 +131,7 @@ OpenResty安装之后就有配置文件及相关的目录的，为了工作目�
   $ curl http://localhost:6699
   #+END_EXAMPLE
 
-** 常用API
-*** 获取uri参数
-  - ngx.req.get_uri_args()
-  - ngx.req.get_post_args()
-
-*** 传递请求的uri参数
-  - ngx.encode_args()
-
-*** 获取请求的body
-  - ngx.req.read_body() 或 配置lua_need_request_body on
-  - ngx.req.get_body_data()
-
-*** 输出响应
-  - ngx.say()
-  - ngx.print()
-  - ngx.flush()
-
-*** 日志
-  - ngx.log(/log_level/, ...)
-
-*** 子查询
-  - ngx.location.capture()
-  - ngx.location.capture_multi()
-      : 返回值包括，res.status/res.header/res.body/res.truncated
-
-*** 单个请求不同阶段的数据共享
-  - ngx.ctx表
-
-** 参考
-  - [[openresty最佳实践]]
-  - [[http://openresty.org/en/][官网]]
-
-
-* openresty配置应用实例
+* openresty示例
 本节将从实际需求出发，深入了解openresty。
 
 ** 实现302重定向
@@ -220,8 +190,8 @@ OpenResty安装之后就有配置文件及相关的目录的，为了工作目�
   }
   #+END_EXAMPLE
 
-
-
+* lua插件测试
+参考360工程师的测试工具[[https://github.com/membphis/lua-resty-test][github]]
 
 * 性能调优问题记录
   - 压力测试时，出现“socket: Too many open files (24)”？
@@ -284,6 +254,10 @@ OpenResty安装之后就有配置文件及相关的目录的，为了工作目�
      :    设置 net.nf_conntrack_max = 数值
      :    执行 sysctl -p
 
-
-
-
+* 参考
+  - [[http://openresty.org/en/][官网]]
+  - [[openresty最佳实践]]
+  - [[https://github.com/sqlfocus/lua-nginx-module][nginx lua模块儿注解]]
+  - [[https://github.com/sqlfocus/nginx][nginx注解]]
+  - [[https://github.com/openresty/nginx-systemtap-toolkit][工具箱]]
+ 
