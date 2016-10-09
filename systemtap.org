@@ -1,14 +1,198 @@
 #+TITLE: 系统监控工具systemtap简介
 #+AUTHOR: sqlfocus
 
-
 * 简介
+systemtap是一个免费框架，用来收集运行中的linux系统的信息；这些信息可以用来分
+析性能或定位函数级别的问题。
 
+此开源软件简化了获取信息的过程，不需要开发者修改代码、重编译、安装、重启等；
+它提供了简单的命令行接口，和对应的脚本语言，也配套了很多示例以丰富内部脚本库
+，更加方便了重用和抽象。
 
+* 安装
+** ubuntu
+*** 安装systemtap
+  #+BEGIN_EXAMPLE
+  系统版本ubuntu-16.04
+  $ sudo apt-get install systemtap                 安装systemtap
+  $ sudo apt-get install linux-headers-${uname -r} 安装依赖的头文件
+  $ sudo apt-get install libcap-dev gcc            安装依赖
 
+  简单验证
+  $ sudo stap -e 'probe begin { printf("hello world\n"); exit(); }'
+  #+END_EXAMPLE
+
+*** 安装内核的debug symbols
+  #+BEGIN_EXAMPLE
+  systemtap跟踪功能强大，但需要安装内核debug symbols
+  
+  方式一：命令行安装
+  引入GPG key
+  $ sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C8CAB6595FDFF622
+                                                  16.04及更高版本
+  $ sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ECDCAD72428D7C01
+                                                  16.04以前的版本
+  添加源
+  $ codename=$(lsb_release -c | awk  '{print $2}')
+  $ sudo tee /etc/apt/sources.list.d/ddebs.list << EOF
+     > deb http://ddebs.ubuntu.com/ ${codename}      main restricted universe multiverse
+     > deb http://ddebs.ubuntu.com/ ${codename}-security main restricted universe multiverse
+     > deb http://ddebs.ubuntu.com/ ${codename}-updates  main restricted universe multiverse
+     > deb http://ddebs.ubuntu.com/ ${codename}-proposed main restricted universe multiverse
+     > EOF
+  更新源
+  $ sudo apt-get update
+  安装调试信息包
+  $ sudo apt-get install linux-image-$(uname -r)-dbgsym
+  
+  方式二：手工下载安装
+  $ wget http://ddebs.ubuntu.com/pool/main/l/linux/linux-image-4.4.0-38-generic-dbgsym_4.4.0-38.57_amd64.ddeb
+  $ sudo dpkg -i linux-image-4.4.0-38-generic-dbgsym_4.4.0-38.57_amd64.ddeb
+
+  方式三：脚本下载
+  $ wget http://www.domaigne.com/download/tools/get-dbgsym 
+  $ chmod +x get-dbgsym
+  $ ./get-dbgsym
+
+  验证
+  $ sudo stap -e 'probe kernel.function("sys_open") {log("hello world") exit()}'
+  #+END_EXAMPLE
+
+  参考[[https://wiki.ubuntu.com/Kernel/Systemtap][ubuntu wiki]] [[http://blog.jeffli.me/blog/2014/10/10/install-systemtap-in-ubuntu-14-dot-04/][牛人blog]]
+
+*** 生成模块儿信息
+  #+BEGIN_EXAMPLE
+  $ sudo apt-get install elfutils
+  
+  以下代码放入文件debug_ko.sh
+  for file in `find /usr/lib/debug -name '*.ko' -print`
+  do
+        buildid=`eu-readelf -n $file| grep Build.ID: | awk '{print $3}'`
+        dir=`echo $buildid | cut -c1-2`
+        fn=`echo $buildid | cut -c3-`
+        mkdir -p /usr/lib/debug/.build-id/$dir
+        ln -s $file /usr/lib/debug/.build-id/$dir/$fn
+        ln -s $file /usr/lib/debug/.build-id/$dir/${fn}.debug
+  done
+
+  $ sudo ./debug_ko.sh
+  #+END_EXAMPLE
+
+*** 基本指令
+  - stap --help                          :: 帮助信息
+  - stap -l 'kernel.function("acpi_*")'  :: 列举内核中以acpi_开头的函数
+
+* 脚本
+systemtap允许使用者write and reuse简单的脚本，来深入检测运行的linux系统；这些
+脚本可以采集数据、过滤、汇总等，从而为分析复杂的函数和性能问题提供帮助。
+
+脚本的本质是指定events，并指定对应的处理句柄；当systemtap运行脚本后，它监控事
+件，一旦触发，linux内核运行指定的处理句柄，然后恢复。
+
+当前支持的事件有：entering/exiting a function、timer expiration、session term
+-ination等
+
+** 脚本运行流程
+  - 检查脚本是否引用tapset库/usr/share/systemtap/tapset/，替换
+  - 转换脚本为C语言，利用C编译器转换为系统模块儿
+  - 加载模块儿，使能探查点/probe(events + handler)
+  - 对应事件发生后，执行对应的handler
+  - 一旦会话中止，禁止探查点，卸载内核模块儿
+
+** 格式
+  - 脚本文件以.stp结尾
+  - 探针/probe的书写格式"probe event {statements}"
+  - 单个探针支持多个事件，以逗号分隔
+  - statements语句块儿采用和C语言相同的语法
+  - 公共代码可以抽象为函数
+      : function function_name(arguments) {statements}
+      : probe event {function_name(arguments)}
+  - 事件分为同步、异步两种
+      : 同步包括
+      :     syscall.system_call                     内核态探针
+      :     vfs.file_operation
+      :     kernel.function("function")
+      :     kernel.trace("tracepoint")
+      :     module("module").function("function")
+      :
+      :     process.*/process().*                   用户态探针
+      : 异步包括
+      :     begin 脚本启动
+      :     end   脚本结束
+      :     timer事件, for example, timer.s()/.ms()/.ns()/.hz()/.jiffies()
+  - 支持的注释
+      : /**/
+      : //
+      : #
+  - 定义别名探针
+      : 用于屏蔽低层细节，提供高层抽象；隔离，低层变化不影响上层应用
+      : probe <alias> = <probepoint> { <prologue_stmts> }    代码前置风格
+      : probe <alias> += <probepoint> { <epilogue_stmts> }   代码后置风格
+      : probe <alias> {statements}                           引用alias
+  - 内嵌C代码
+      : 支持guru模式，脚本的安全特性，如代码、数据引用保护等，被移除
+      : 通过命令行参数-g开启guru模式
+      : 在guru模式下，接受C代码，%{ <C statements> %}
+      : 宏STAP_ARG_xxx用来传递参数xxx
+      : 宏STAP_RETVALUE表示返回值
+      : 宏STAP_RETURN()用于提前返回
+      : 宏STAP_ERROR()用于返回错误值
+
+** 知名函数
+参考man tapset::context
+  - cpu()                :: 当前cpu号
+  - ctime()              :: 转换时间戳为date格式
+  - execname()           :: 获取执行程序名
+  - exit()               :: 结束运行脚本
+  - ~get_cycles()~       :: 硬件cycle计数的快照
+  - ~gettimeofday_s()~   :: 时间戳
+  - pid()                :: 获取执行程序id
+  - pp()                 :: 当前探针的描述信息
+  - ppfunc()             :: 触发当前探针的函数名
+  - ~print_backtrace()~  :: 打印内核堆栈信息
+  - ~print_ubacktrace()~ :: 打印用户态堆栈信息
+  - printf()             :: 类C的打印函数
+  - probefunc()          :: 被激发事件的函数名
+  - ~thread_indent()~    :: 帮助更合理的安排输出，参数为需要增加的缩进值
+  - target()             :: 获取 ~-x/-c~ 指定的参数
+  - tid()                :: 当前线程ID
+  - uid()                :: user ID
+
+** 知名变量
+  - name                 :: 系统调用名，只能用于syscall. /system_call/
+  - $return              :: 在.return后缀的探针环境里，表示返回值
+  - $/@ + num            :: 脚本接受命令行参数
+     : $表示整型，如probe kernel.function($1) { }，接受命令行第一个参数，且类型为整型
+     : @表示字符串，如probe kernel.function(@1) { }，接受命令行第一个参数，且字符串
+  - 关联数组             :: 类似于hash表
+     : 赋值格式foo["tom"] = 23
+     : 必须用global修饰
+     : 可利用foreach遍历；利用+/-指定遍历顺序，升序/降序；利用limit限制遍历数
+     : 利用delete删除关联数组
+     : 利用in判断关键字是否在数组中
+     : 利用<<<作统计聚合
+     : 利用@extractor(variable/key)提取聚合的数据，其中extractor可以为
+     :     count/sum/min/max/avg
+     : 利用@hist_log或者@hist_linear罗列聚合数据
+     
+** 修饰符
+  - global               :: 声明后，在probe事件间可共享此变量
+
+** 访问变量
+  - 通过 =$var-name= 或 =@var("var-name")= ，访问局部变量(利用stap -L ...罗列的变量)
+  - 通过 =@var("varname@file-path")= ，访问全局和静态变量
+  - 访问指针变量， =kernel_char()/_short/_long/_string/_string_n()=
+  - 利用 =->= ，访问结构变量
+  - @cast()，实现强制类型转换
+  - @defined()，查看某个变量是否可用
+  - 格式化打印变量， =$$vars/$$locals/$$parms/$$return=
+  - 格式化打印指针变量， =$$parms$= ，打印结构体； =$$params$$= 打印结构体及第一层嵌套
+  - 访问用户态程序变量，编译程序时需添加-g参数
+ 
 * 参考
   - [[https://sourceware.org/systemtap/][官网]]
   - [[https://sourceware.org/systemtap/wiki][wiki]]
+  - man stap/stapprobes
 
 
 
