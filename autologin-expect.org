@@ -1,0 +1,50 @@
+#+TITLE: 利用expect实现自动登录
+#+AUTHOR: sqlfocus
+
+此文档介绍如何利用expect工具实现终端ssh自动登录，免去输入密码的困扰，
+尤其是跳板机的二次登录。
+
+* 安装expect
+sudo apt-get install expect
+
+* 编写自登录脚本
+  #+BEGIN_EXAMPLE
+  $ touch www.test.com
+  $ chmod +x www.test.com
+  $ vi www.test.com
+      #!/usr/bin/expect
+
+      #auto ssh login
+      spawn ssh root@www.test.com
+      expect "*password:"
+      send "123456\r"
+      expect "*#"
+      interact                  #交互模式，代理模式可用"expect eof"替换
+  #+END_EXAMPLE
+
+* 使用脚本登录
+  - 先手动ssh目标机以保存密匙 :: 因为脚本没有考虑此信息，不然会报错
+  - 命令登陆远程机器 :: $ ./www.test.com
+
+* 实现ssh跳板机登录
+  #+BEGIN_EXAMPLE
+  $ touch www.test.com
+  $ chmod +x www.test.com
+  $ vi www.test.com
+      #!/usr/bin/expect
+
+      #auto ssh login
+      spawn ssh root@www.test.com
+      expect "*password:"
+      send "123456\r"
+
+      expect "*#"
+      send "ssh root@www.another.com\r"
+      expect "*password:"
+      send "234567\r"
+
+      interact                  #交互模式，代理模式可用"expect eof"替换
+  #+END_EXAMPLE
+
+
+
