@@ -3,19 +3,21 @@
 
 本文档记录曾经预言或使用过的优秀的第三方开源软件，以期后续参考查阅。
 
-* redis
-    高效的内存数据库[[http://redis.io][官网]] 
-
 * linenoise
     用于命令行补齐/提示等，集成在redis内部 [[https://github.com/antirez/linenoise][官网]]
-
-* zookeeper
-    实现raft/paxos强一致性的算法，被众多开源集成用于集群管理 [[http://zookeeper.apache.org/][官网]]
-
-* naxsi
-    开源、高性能、规则维护成本低的WAF实现 [[https://github.com/nbs-system/naxsi][官网]]
 
 * Modsecurity
     开源的WAF标准 [[https://github.com/sqlfocus/ModSecurity/tree/libmodsecurity][官网]]
 
+* naxsi
+    开源、高性能、规则维护成本低的WAF实现 [[https://github.com/nbs-system/naxsi][官网]]
+
+* openresty
+    高速HTTP平台，nginx + lua，[[http://openresty.org/cn/][官网]]
+
+* redis
+    高效的内存数据库[[http://redis.io][官网]] 
+
+* zookeeper
+    实现raft/paxos强一致性的算法，被众多开源集成用于集群管理 [[http://zookeeper.apache.org/][官网]]
 
