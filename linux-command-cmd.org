@@ -1,0 +1,19 @@
+#+TITLE: 简介linux有用的指令
+#+AUTHOR: sqlfocus
+
+本文档摘录linux的指令，主要集中在实用功能，备忘！
+
+* ps
+  - ps -eHF
+      : -H 展示继承层次 
+      : -e 展示所有进程
+      : -F 展示所有的项 
+      : 
+      : 输出首行    ps -eHF | grep UID | grep -v grep
+      : 输出有效行  ps -eHF | grep /key-word/ | grep -v grep
+      : 首行关键字参考man ps
+  -
+
+
+
+
