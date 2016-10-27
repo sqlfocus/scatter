@@ -166,7 +166,7 @@ Lua5.1语言，同时可选地支持Lua5.2和Lua5.3中的一些不破坏向后�
       :    function f(x)  return g(x)+1 end     利用返回值作额外的计算
       :    function f(x)  return x or g(x) end  调整返回值并作额外计算
       :    function f(x)  return (g(x)) end     需调整返回值
-  -Lua如何实现动态连接？
+  - Lua如何实现动态连接？
       : ANSI C不支持动态连接，Lua通常不包含无法通过ANSI C实现的机制
       : 动态连接机制是例外，因此为可移植性，Lua自身在不同平台提供了动态连接机制
       : 功能的实现集中在package.loadlib()函数，加载指定的库，并链接入Lua
