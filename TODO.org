@@ -2,6 +2,7 @@
 #+AUTHOR: sqlfocus
 
 本文档用于归化个人自由时间，以期从长远的战略角度指导个人的职业生涯！
+
 * 备注
 *** 时间格式
    -普通格式
@@ -82,14 +83,18 @@
 
 很棒的工具，是不是？详细信息参考简介文档[[flex-bison.org]]。
 
-*** TODO epoll模形
+*** DONE epoll模形
+    CLOSED: [2016-11-08 Tue 09:49]
+但凡涉及到高性能服务器设计，windows离不开IOCP模型，linux则依赖EPOLL模
+型；因此，了解它是开启服务器程序开发的窗口。
+
+参考 [[https://github.com/sqlfocus/linux/blob/master/epoll.org][linux内核源码摘录]]
 
 *** TODO 一致性hash算法
 
 *** TODO 蜜罐
 
 *** TODO 沙箱 
-
 
 * 开源源码
 希望读过的源码都能够存放在个人github上，并对重要对函数流程做好摘录；
@@ -106,7 +111,13 @@
 
 *** TODO mtcp
 
-*** TODO nginx
+*** DONE nginx
+    CLOSED: [2016-11-08 Tue 09:53]
+nginx做为7层反向代理被大量使用；结合Lua，整合成的openresty也逐渐流行
+起来，主要被用作本地服务器或安全领域(如WAF)。
+
+参考 [[https://github.com/sqlfocus/nginx][nginx代码摘录]]
+[[https://github.com/sqlfocus/lua-nginx-module][nginx lua模块儿代码摘录]]
 
 *** TODO ovs
 
@@ -115,7 +126,6 @@
 *** TODO varnish
 
 *** TODO zookeeper
-
 
 
 * 计算机网络书籍
