@@ -1,0 +1,72 @@
+#+TITLE: 简述程序跟踪与调试手段
+#+AUTHOR: sqlfocus
+
+* curl
+可用仿真发起简单的HTTP请求
+
+  #+BEGIN_EXAMPLE
+  $ curl -i http://localhost                      输出协议头
+  $ curl -i --location http://localhost           跟踪重定向
+  $ curl -v -i http://localhost                   详细展示交互流程
+  #+END_EXAMPLE
+
+* gdb
+参考gdb.org
+
+* netstat
+此命令常常用于网络状态监控及调试，本地总结工作过程中常用的使用方式，以
+期增长运维调试能力。
+   - netstat -nta | awk 'NR>1 {print $6}' | sort | uniq -c
+      : 统计所有TCP链路的状态，输出结果为
+      :     1 ESTABLISHED
+      :     1 Foreign
+      :     5 LISTEN
+   - netstat -s
+      : 输出各协议的统计信息
+
+* ps
+  - ps -eHF
+      : -H 展示继承层次 
+      : -e 展示所有进程
+      : -F 展示所有的项 
+      : 
+      : 输出首行    ps -eHF | grep UID | grep -v grep
+      : 输出有效行  ps -eHF | grep /key-word/ | grep -v grep
+      : 首行关键字参考man ps
+* pstack
+效果类似于gdb bt指令的效果
+
+  #+BEGIN_EXAMPLE
+  $ sudo apt-get install pstack
+  $ sudo pstack PID-of-program
+  #+END_EXAMPLE
+
+* strace/ltrace
+分别用来查看应用程序执行过程中所发起的系统函数调用和动态库函数调用
+
+  #+BEGIN_EXAMPLE
+  # strace -p PID-of-program
+  # ltrace -p PID-of-program
+  #+END_EXAMPLE
+
+* systemtap
+可用生成火焰图，了解代码的执行流程，查找具体的函数；并且大多数调试功能
+都是在程序动态运行的时候搞定，酷!!!
+
+refer <systemtap.org>
+
+* ulimit
+ulimit命令用于查看系统限制
+  - ulimit -n  :: 最大打开的文件数
+  - ulimit -u  :: 最大用户进程数
+  - ulimit -a  :: 所有限制
+
+当然此命令也可用于修正系统限制
+  - ulimit -n 65536    :: 修改最大打开文件数，即时生效，重启失效
+  - ulimit -SHn 65536  :: -S指soft软限制，-H指hard硬限制
+
+* 日志
+
+
+
+
