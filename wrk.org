@@ -12,9 +12,9 @@ wrk是流行的HTTP基准测试(benchmarking tool)工具，在单颗多核CPU上
 另外，可以通过LuaJIT脚本产生HTTP请求、处理应答、定制输出报告等；细节可
 参考SCRIPTING或~/scripts文件夹。
 
-注意，wrk所在的测试设备，必须拥有足够的端口号，并且关闭的插口应该能够快
-速回收；另外，虽然简单的修改HTTP方法、路径等的脚本不会影响wrk的性能，但
-per-request动作，如创建新请求等，会降低wrk产生请求负载的能力。
+注意，wrk所在的测试设备，必须拥有 *足够的端口号* ，并且关闭的插口应该能
+*够快速回收* ；另外，虽然简单的修改HTTP方法、路径等的脚本不会影响wrk的性
+能，但per-request动作，如创建新请求等，会降低wrk产生请求负载的能力。
 
 ** 安装
   #+BEGIN_EXAMPLE
@@ -33,7 +33,8 @@ per-request动作，如创建新请求等，会降低wrk产生请求负载的能
   - --timeout   :: 插口或请求的超时时限，值 ~2s/2m/2h~
 
 * 示例
-** 简单示例
+此处仅罗列简单的命令行示例，利用Lua脚本丰富操控功能的示例可参考wrk代码
+导读。
   #+BEGIN_EXAMPLE
   使用方法
   wrk <options> <url>
@@ -54,130 +55,9 @@ per-request动作，如创建新请求等，会降低wrk产生请求负载的能
   Transfer/sec:  9.11MB
   #+END_EXAMPLE
 
-** lua脚本示例
-wrk在三个阶段支持LuaJIT，setup、running、done；每个wrk线程拥有独立的脚本环
-境；而且setup和done两个阶段和running阶段处于不同的环境。
-
-wrk的公共接口包括，一个全局的表和一组全局的函数。
-  #+BEGIN_EXAMPLE
-   wrk = {
-    scheme  = "http",
-    host    = "localhost",
-    port    = nil,
-    method  = "GET",
-    path    = "/",
-    headers = {},
-    body    = nil,
-    thread  = <userdata>,
-  }
-
-  返回HTTP请求字符串，利用参数和wrk表组合而成
-  function wrk.format(method, path, headers, body)
-
-  对应getaddrinfo()，返回包含 主机+服务 的地址对
-  function wrk.lookup(host, service)
-
-  连接成功返回true
-  function wrk.connect(addr)
-  #+END_EXAMPLE
-
-  #+BEGIN_EXAMPLE
-  SETUP阶段
-      开始于目标IP已经resolved，所有线程已经初始化，但尚未启动
-  
-  此函数每个线程调用一次，获取到一个代表用户数据的对象
-  function setup(thread)
-    thread.addr             - get or set the thread's server address
-    thread:get(name)        - get the value of a global in the thread's env
-    thread:set(name, value) - set the value of a global in the thread's env
-    thread:stop()           - stop the thread，仅在线程运行时调用
-  #+END_EXAMPLE
-
-  #+BEGIN_EXAMPLE
-  RUNNING阶段
-      以init()调用开始，每个请求调用一次request() + 一次response()
-
-  能够接收所有的参数，其中命令行参数和wrk的参数以--分开
-  function init(args)
-
-  返回响应的延迟时间，单位ms
-  function delay()
-
-  返回HTTP请求字符串；构建请求代价昂贵，应该在init()构建完毕，此处查
-  找并返回，以提高效率
-  function request()
-
-  调用此函数时，会传入HTTP响应状态、解析的头部和body；但解析headers和
-  body代价昂贵，因此此函数可设置为nil
-  function response(status, headers, body)
-  #+END_EXAMPLE
- 
-  #+BEGIN_EXAMPLE
-  Done阶段
- 
-  此函数传入的参数包括，总体结果表、基于per-request的延迟统计表、基
-  于per-thread的请求速率表
-
-  function done(summary, latency, requests)
-  #+END_EXAMPLE
-
-*** 示例代码
-  #+BEGIN_EXAMPLE
-  local counter = 1
-  local threads = {}
-
-  function setup(thread)
-   thread:set("id", counter)
-   table.insert(threads, thread)
-   counter = counter + 1
-  end
-  
-  function init(args)
-   requests  = 0
-   responses = 0
-  
-   local msg = "thread %d created"
-   print(msg:format(id))
-  end
-  
-  function request()
-   requests = requests + 1
-   return wrk.request()
-  end
-  
-  function response(status, headers, body)
-   responses = responses + 1
-  end
-  
-  function done(summary, latency, requests)
-   for index, thread in ipairs(threads) do
-      local id        = thread:get("id")
-      local requests  = thread:get("requests")
-      local responses = thread:get("responses")
-      local msg = "thread %d made %d requests and got %d responses"
-      print(msg:format(id, requests, responses))
-   end
-  end
-  #+END_EXAMPLE
- 
-  #+BEGIN_EXAMPLE
-  [root@LetvWebServer-3355E8 wrk]# ./wrk -s scripts/setup.lua http://localhost:6699
-  thread 1 created
-  thread 2 created
-  Running 10s test @ http://localhost:6699
-    2 threads and 10 connections
-    Thread Stats   Avg      Stdev     Max   +/- Stdev
-      Latency   181.39us   19.88us   1.35ms   84.00%
-      Req/Sec    26.83k   448.94    27.56k    78.22%
-    539229 requests in 10.10s, 94.08MB read
-  Requests/sec:  53389.72
-  Transfer/sec:      9.32MB
-  thread 1 made 269678 requests and got 269672 responses
-  thread 2 made 269561 requests and got 269557 responses
-  #+END_EXAMPLE
-
 * 参考
   - [[https://github.com/wg/wrk][github]]
+  - [[https://github.com/sqlfocus/wrk][wrk代码导读]]
   - ab.org
 
 
