@@ -131,6 +131,18 @@ OpenResty安装之后就有配置文件及相关的目录的，为了工作目�
   $ curl http://localhost:6699
   #+END_EXAMPLE
 
+* 第三方插件
+** lua-resty-limit-traffic
+由于nginx的限速模块儿ngx_http_limit_conn_module、ngx_http_req_limit_module
+都是基于nginx.conf配置文件，更新配置后必须重新加载进程；且使用不方便，不能
+细粒度定制化限速，比如针对不同的IP制订不同的限速策略等。
+
+本模块儿并不是通过修正nginx的模块儿，使其灵活易用；而是模仿nginx的模块儿，
+利用Lua表重新实现了限速功能，因此暴露了灵活的接口，可灵活定制策略、细粒度
+操控限速对象等。
+
+[[https://github.com/openresty/lua-resty-limit-traffic][网址]]
+
 * openresty示例
 本节将从实际需求出发，深入了解openresty。
 
@@ -181,7 +193,7 @@ OpenResty安装之后就有配置文件及相关的目录的，为了工作目�
   }
   #+END_EXAMPLE
 
-** 限速
+** 单链接限速
   #+BEGIN_EXAMPLE
   location /download {
       access_by_lua_block {
@@ -192,67 +204,6 @@ OpenResty安装之后就有配置文件及相关的目录的，为了工作目�
 
 * lua插件测试
 参考360工程师的测试工具[[https://github.com/membphis/lua-resty-test][github]]
-
-* 性能调优问题记录
-  - 压力测试时，出现“socket: Too many open files (24)”？
-     : 可能原因，系统文件句柄数不足
-     : ‘$ ulimit -a’查看系统限制
-     : 
-     : 临时生效办法
-     :     ulimit -n 数字
-     : 永久生效办法
-     :     编译文件 /etc/security/limits.conf，添加
-     :        * soft nofile 65536
-     :        * hard nofile 65536
-     :     重新登录
-  - 利用ab作压力测试，出现“apr_socket_recv: Connection reset by peer”？
-     : 并且服务器端的消息日志/var/log/messages出现 "TCP: Possible SYN flooding
-     : on port 6699. Sending cookies."
-     : 
-     : 临时解决方案
-     :   cd /proc/sys/net/ipv4
-     :   echo "0" > tcp_syncookies
-     : 长久解决方案
-     :   编译 
-             /etc/sysctl.conf
-     :   设置
-     :       net.ipv4.ip_forward = 0                   
-     :       net.ipv4.ip_local_port_range = 1024 65000 #允许系统打开的端口数
-     :       net.ipv4.conf.default.rp_filter = 1
-     :       net.ipv4.conf.all.rp_filter = 1
-     :       net.ipv4.tcp_keepalive_time = 30          #当keepalive生效后，发送保活消息的频度
-     :       net.ipv4.tcp_syncookies = 0               #syn队列溢出时，是否开启syn cookies
-     :       net.ipv6.conf.all.disable_ipv6 = 1
-     :       net.ipv4.tcp_max_syn_backlog = 262144     #记录尚未收到客户端确认信息的连接上限
-     :       net.ipv4.tcp_synack_retries = 1           #syn+ack重试次数
-     :       net.ipv4.tcp_syn_retries = 1              #syn的重试次数
-     :       net.ipv4.tcp_max_tw_buckets = 6000        #timewait的数量
-     :       net.ipv4.tcp_tw_reuse = 1                 #开启重用，允许timewait插口用于tcp连接
-     :       net.ipv4.tcp_tw_recycle = 1               #启用timewait快速回收
-     :       net.ipv4.tcp_fin_timeout = 1              #主动断开连接，保持在FIN-WAIT-2状态的时间
-     :       net.core.somaxconn = 262144               #最大连接数
-     :       net.core.netdev_max_backlog = 262144      #网卡速率快时，允许送到缓存队列的数据包最大数目
-     :       net.ipv4.tcp_max_orphans = 262144         #系统允许的不关联到用户句柄的tcp套接字上限制
-     :       net.ipv4.tcp_timestamps = 0               #关闭利用时间戳规避回绕的方法
-     :       
-     :   执行 
-             sysctl -p
-  - 服务器日志出现“TCP: drop open request from 202.153.162.100/62751"？
-     : CENTOS日志存放在/var/log/messages
-     :
-     : IP_conntrack表示连接跟踪数据库(conntrack database)，代表NAT机器跟踪
-     : 连接的数目，连接跟踪表能容纳多少记录是被一个变量控制的，它可由内核中
-     : 的ip-sysctl函数设置，每一个跟踪连接表会占用350字节的内核存储空间，时
-     : 间一长就会把默认的空间填满
-     :
-     : 临时解决方案
-     :    加大ip_conntrack_max值
-     :       cat /proc/sys/net/netfilter/nf_conntrack_max
-     :       echo "合适的数值" /proc/sys/net/ipv4/ip_conntrack_max
-     : 长久解决方案
-     :    编辑 /etc/sysctl.conf
-     :    设置 net.nf_conntrack_max = 数值
-     :    执行 sysctl -p
 
 * 参考
   - [[http://openresty.org/en/][官网]]
