@@ -9,13 +9,16 @@ systemtap是一个免费框架，用来收集运行中的linux系统的信息；
 它提供了简单的命令行接口，和对应的脚本语言，也配套了很多示例以丰富内部脚本库
 ，更加方便了重用和抽象。
 
+尽管systemtap可以很轻松的监管内核事件，但用户态的事件监管需要内核支持才行；
+目前仅有部分内核版本支持。不过，systemtap社区正致力于user-space probing。
+
 * 安装
 ** ubuntu
 *** 安装systemtap
   #+BEGIN_EXAMPLE
   系统版本ubuntu-16.04
   $ sudo apt-get install systemtap                 安装systemtap
-  $ sudo apt-get install linux-headers-${uname -r} 安装依赖的头文件
+  $ sudo apt-get install linux-headers-$(uname -r) 安装依赖的头文件
   $ sudo apt-get install libcap-dev gcc            安装依赖
 
   简单验证
@@ -82,6 +85,21 @@ systemtap是一个免费框架，用来收集运行中的linux系统的信息；
   - stap --help                          :: 帮助信息
   - stap -l 'kernel.function("acpi_*")'  :: 列举内核中以acpi_开头的函数
 
+** 手工安装
+*** 安装systemtap
+  - [[ftp://sources.redhat.com/pub/systemtap/][systemtap下载地址]]
+  - [[https://fedorahosted.org/releases/e/l/elfutils/][elfutils下载地址]]
+  - 安装
+      : tar zxvf systemtap-3.0.tar.gz
+      : tar jxvf elfutils-0.167.tar.bz2
+      : cd systemtap-3.0
+      : ./configure  --with-elfutils=elfutils源码目录 --prefix=systemTap安装目录
+      : make
+      : make install
+  - systemtap加入可执行文件路径
+      : stap -V
+
+*** 后续步骤同非手工安装
 * 脚本
 systemtap允许使用者write and reuse简单的脚本，来深入检测运行的linux系统；这些
 脚本可以采集数据、过滤、汇总等，从而为分析复杂的函数和性能问题提供帮助。
