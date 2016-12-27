@@ -15,7 +15,7 @@ systemtap是一个免费框架，用来收集运行中的linux系统的信息；
   #+BEGIN_EXAMPLE
   系统版本ubuntu-16.04
   $ sudo apt-get install systemtap                 安装systemtap
-  $ sudo apt-get install linux-headers-${uname -r} 安装依赖的头文件
+  $ sudo apt-get install linux-headers-$(uname -r) 安装依赖的头文件
   $ sudo apt-get install libcap-dev gcc            安装依赖
 
   简单验证
