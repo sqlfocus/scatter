@@ -1,0 +1,128 @@
+#+TITLE: 压力测试工具curl-loader
+#+AUTHOR: sqlfocus
+
+
+本文档介绍压力测试工具curl-loader的使用，以期能够掌握更多的性能测试
+工具，为完善程序服务！
+
+* 安装
+  #+BEGIN_EXAMPLE
+  下载地址
+  [[http://curl-loader.sourceforge.net/index.html][官网]]
+  [[https://github.com/aschepis/curl-loader][github]]
+
+  $ tar jxvf curl-loader-0.56.tar.bz2
+  $ cd curl-loader-0.56
+  $ make
+  $ make install DESTDIR=/home/sqlfocus/Program/curl-loader
+  #+END_EXAMPLE
+*注意* ，可通过 /DESTDIR/ 选择安装目录，必要时需要相应的权限；安装过
+程中如遇到依赖包错误，则依照错误提示安装需要的依赖。
+
+* 基本使用
+  - 退出
+     : CTRL-c
+  - 帮助信息
+     : curl-loader -h
+     : man curl-loader
+     : [[http://curl-loader.sourceforge.net/doc/faq.html][官网FAQ]]
+  - 加载配置文件
+     : curl-loader -f <config-file>
+     : 
+     : 示例配置文件${curl-loader-安装目录}/usr/share/doc/curl-loader/conf-examples
+  - 设定统计间隔, 10s
+     : curl-loader -f <config-file> -i 10
+  - 非keepalive工作方式
+     : curl-loader -f <config-file> -r
+  - 指定启动的线程数
+     : curl-loader -f <config-file> -t 4
+     :
+     : 线程数和/proc/cpuinfo中记录的逻辑核心数一致
+  - 需要调整的系统配置
+     : echo 1 > /proc/sys/net/ipv4/tcp_tw_recycle    快速回收TIME_WAIT插口
+     : echo 1 > /proc/sys/net/ipv4/tcp_tw_reuse      重用TIME_WAIT插口
+     : cat /proc/sys/fs/file-max                     调整文件描述符上限
+     : YO=$(</proc/sys/fs/file-max)
+     : if ((YO<102286))                              此数值可按规格增大
+     : then
+     :   echo 102286 > /proc/sys/fs/file-max
+     : fi
+     : YO=$(</proc/sys/net/core/wmem_max)            调整协议栈可用内存
+     : echo "${YO} ${YO} ${YO}" > /proc/sys/net/ipv4/tcp_mem
+
+* 配置文件说明
+配置文件由键值对 ~tag=value~ 组成，共分为两部分：General、URLs。
+
+#+BEGIN_EXAMPLE
+###### GENERAL SECTION ######
+BATCH_NAME= 10K-clients                #脚本名称，也用于生成文件的扩展名
+CLIENTS_NUM_MAX=10000                  #最大客户端数
+CLIENTS_NUM_START=100                  #起始客户端数
+CLIENTS_RAMPUP_INC=50                  #每秒增加的客户端数，单核心50-100
+INTERFACE =eth0                        #发包端口
+NETMASK=255.255.0.0                    #网络掩码，也可用用CIDR(0-32)
+IP_ADDR_MIN= 192.168.1.1               #绑定到客户端的起始地址
+IP_ADDR_MAX= 192.168.53.255            #结束地址(如果地址不存在，会做为secondary IPs自动添加到接口)
+IP_SHARED_NUM= 1                       #总IP个数
+CYCLES_NUM= -1                         #每客户端请求循环次数，-1表示无限循环
+                                          #此参数只作用于没有配置URL_DONT_CYCLE=1的URL
+USER_AGENT= "something user agent"     #自定义的全局user agent
+URLS_NUM= 1                            #后续URLs SECTION将要定义的url数
+
+
+###### URLs SECTION ######
+URL=http://localhost/index.html        #自定义的URL起始部分
+                                          #可用为""，必须和"URL_USE_CURRENT=1"一起
+URL_SHORT_NAME="local-index"           #界面显式的URL标识
+URL_USE_CURRENT=1                      #和URL=""配合，表示利用上述URL操作得到的结果，
+                                          #比如需要认证时，Get推送的POST认证
+URL_DONT_CYCLE=1                       #非循环执行，一般有两种情形：前期认证，
+                                          #后期退出时的处理
+REQUEST_TYPE=GET                       #请求方法，GET、POST、PUT
+HEADER="..."                           #自定义头部
+FRESH_CONNECT=1                        #单个TCP链路上承接的请求数
+                                         #=1时类似于命令行参数-r
+TIMER_TCP_CONN_SETUP=5                 #建立TCP链接的超时时限，包括DNS解析等
+                                         #默认5s，可通过命令行参数-c设定
+TIMER_URL_COMPLETION = 0               #完成一次请求的超时时限，ms，包括重定向
+                                         #超时错误添加到T-err
+TIMER_AFTER_URL_SLEEP = 0              #完成本url请求后，处理下一个url请求前的等待时间，ms
+TRANSFER_LIMIT_RATE=100                #限定本URL的吞吐，bytes/s
+#+END_EXAMPLE
+
+* 终端输出
+ #+BEGIN_EXAMPLE
+ Interval stats (latest:11 sec, clients:400, CAPS-curr:168):
+ H/F   Req:1643,1xx:0 ...
+ H/F/S Req:0,1xx:0,2xx:0, ...
+ -----------------------------------------------------------
+ Summary stats (runs:14 secs, CAPS-average:506):
+
+ CAPS-curr: 最新发送请求数
+ CAPS-average: 总平均发送请求数(RPS)
+ H/F/S: HTTPS/FTPS统计
+ #+END_EXAMPLE
+
+* 输出文件
+  - ${BATCH_NAME}_数字.ctx
+    : 数字，0-n，用于区分相同配置文件的测试结果
+    : 每个客户端的统计信息
+  - ${BATCH_NAME}_数字.log
+    : 客户端日志，可通过命令行参数-l限制此文件大小，默认1024M
+    : msec_offset   cycle_no   url_no   client_no    (ip)   indic     info
+    : 偏移毫秒      请求次数   url编号  客户端编号   IP地址 提示信息  应答信息
+    : 9             0          0        3            !!     RDR       302
+    : 9             0          0        1            !!     OK        200
+  - ${BATCH_NAME}_数字.ops
+    : 操作业务统计信息
+  - ${BATCH_NAME}_数字.txt
+    : 当前系统的运行状况，统计信息(和console界面一致)
+    : T-Err, url completion time expiration errors
+    : D:75ms, average application server Delay
+    : T-In/T-Out, throughput in/out, batch average, Bytes/sec
+
+* 注意事项
+  - 内部自动处理HTTP重定向
+
+
+
