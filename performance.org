@@ -7,19 +7,91 @@
 * 步骤
   - 了解系统的硬件信息，如磁盘IO、CPU型号、内存大小、网卡带宽等
   - 了解系统当前运行状态，如系统负载、内存状态、进程状态、CPU负荷等
-  - 了解应用程序对系统资源的使用情况
+  - 了解应用程序对系统资源的使用情况，预估瓶颈点
   - 先优化程序代码，后优化程序架构
 
-* 系统优化
-  - 系统安装
-  - 内核参数
-  - 文件系统
+* 子系统
+ - 频繁的磁盘读写会增加内存的使用
+ - 大量的网络吞吐，意味着可观的CPU利用率
+ - 可用内存的减少，可能增加大量的swap，从而使系统负载增加
 
+** CPU
+ - 运算性能瓶颈
+    : 提升时钟频率
+    : 提高L1/L2缓存容量
+    : 改进CPU架构
+ - 调度性能瓶颈
+    : IO wait占比过高
+    : Context switch过高
+    : 硬中断占比过高
+    : 软中断占比过高, 如大量数据包从网卡到IP层
+    :
+    : 超线程技术，可以使得当前线程在访问内存间隙，处理器去执行另外一个
+    : 线程；一般超线程的物理CPU被当作两个独立的CPU。
 
+** MEMORY
+ - swap空间换入换出速率是表征内存出现瓶颈的重要标志
 
+** IO
+ -
 
+** NETWORK
+ - socket buffer出现泄露
+   : sudo cat /proc/slabinfo | grep skb
+ - 网卡丢包
+ - 网卡出错
+ - cpu软中断过高
 
+** 应用程序
+一般分为两类，CPU bound、IO bound；Web服务器等服务类程序属于前者；数据
+库服务器、cache服务器属于后者。
 
+* 工具
+** free
+查看内存使用情况
 
+** iperf
+
+** lspci
+查看网卡等PCI设备信息
+
+** mpstat
+统计CPU信息
+ - mpstat -P ALL  1
+   :查看所有CPU的基本统计信息，1秒1次
+
+** netperf
+
+** sar
+收集系统信息的工具
+ - sar -n DEV 1
+   : 查看网卡流量
+
+** TC
+控制网络流量
+
+** top
+
+** vmstat
+
+* 调整手段
+** 调整进程最大文件句柄
+ #+BEGIN_EXAMPLE
+ sudo vi /etc/security/limits.conf
+   * soft nofile 60000
+   * hard nofile 60000
+ #+END_EXAMPLE
+
+** 重用TIMEWAIT插口
+ #+BEGIN_EXAMPLE
+ sudo vi /etc/sysctl.conf
+   net.ipv4.tcp_tw_reuse = 1
+   net.ipv4.tcp_tw_recycle = 1
+ sudo sysctl -p
+ #+END_EXAMPLE
+
+* 参考书籍
+ - linux性能优化大师
+ - 高性能linux服务器构建实战 I、II
 
 
