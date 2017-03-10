@@ -85,6 +85,35 @@ systemtap是一个免费框架，用来收集运行中的linux系统的信息；
   - stap --help                          :: 帮助信息
   - stap -l 'kernel.function("acpi_*")'  :: 列举内核中以acpi_开头的函数
 
+** centos
+*** 安装kernel-devel
+  #+BEGIN_EXAMPLE
+  查看内核版本号
+  # uname -a
+      4.4.52-1.el7.elrepo.x86_64
+
+  方式一(lt代表long term；ml代表main line)
+  # yum install kernel-lt-devel-4.4.52-1.el7.elrepo.x86_64
+
+  方式二
+  - 下载kernel-lt-devel-4.4.52-1.el7.elrepo.x86_64.rpm
+  $ rpm -ivh kernel-lt-devel-4.4.52-1.el7.elrepo.x86_64.rpm
+  #+END_EXAMPLE
+
+*** 安装systemtap
+  #+BEGIN_EXAMPLE
+  # yum install systemtap
+  #+END_EXAMPLE
+
+*** 安装debuginfo
+  #+BEGIN_EXAMPLE
+  - 下载kernel-debuginfo-4.4.52-1.el7.elrepo.x86_64.rpm
+  - 下载kernel-debuginfo-common-4.4.52-1.el7.elrepo.x86_64.rpm
+
+  $ rpm -ivh kernel-debuginfo-4.4.52-1.el7.elrepo.x86_64.rpm
+  $ rpm -ivh kernel-debuginfo-common-4.4.52-1.el7.elrepo.x86_64.rpm
+  #+END_EXAMPLE
+
 ** 手工安装
 *** 安装systemtap
   - [[ftp://sources.redhat.com/pub/systemtap/][systemtap下载地址]]
@@ -100,6 +129,7 @@ systemtap是一个免费框架，用来收集运行中的linux系统的信息；
       : stap -V
 
 *** 后续步骤同非手工安装
+
 * 脚本
 systemtap允许使用者write and reuse简单的脚本，来深入检测运行的linux系统；这些
 脚本可以采集数据、过滤、汇总等，从而为分析复杂的函数和性能问题提供帮助。
