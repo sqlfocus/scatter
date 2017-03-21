@@ -1,0 +1,29 @@
+#+TITLE: 简介modsecurity规则
+#+AUTHOR: sqlfocus
+
+
+本文档简介由SpiderLabs实验室提供的著名waf规则格式，以便于移植规则到
+更高效的开发平台，如openresty。
+
+* 规则格式
+官方wiki，https://github.com/SpiderLabs/ModSecurity/wiki ，里面介绍了
+Modsecurity规则相关的方方面面，值得细细阅读！
+
+* OWASP CRS
+此工程为OWASP Core Rule Set文档；可以利用sphinx工具编译为html或txt
+等格式，以方便阅读。
+  #+BEGIN_EXAMPLE
+  $ sudo apt-get install sphinx-common
+  $ git clone https://github.com/SpiderLabs/OWASP-CRS-Documentation.git
+  $ cd OWASP-CRS-Documentation/
+  $ make html
+  #+END_EXAMPLE
+
+* SpiderLabs官方git
+官网地址https://github.com/SpiderLabs/ ，囊括了此实验室的项目，值得关注！
+
+
+
+
+
+
