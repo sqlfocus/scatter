@@ -1,0 +1,138 @@
+#+TITLE: zookeeper简介
+#+AUTHOR: sqlfocus
+
+
+本文件简介zookeeper的使用流程，如服务器编译、安装，客户端编程、编译、安
+装等，备忘！
+
+* 简介
+ZooKeeper is a distributed, open-source coordination service for distributed 
+applications. It exposes a simple set of primitives that distributed 
+applications can build upon to implement higher level services for 
+synchronization, configuration maintenance, and groups and naming. It is 
+designed to be easy to program to, and uses a data model styled after the 
+familiar directory tree structure of file systems. It runs in Java and has 
+bindings for both Java and C.
+ZooKeeper是一个分布式的，开放源码的分布式应用程序协调服务，是Google的Chubby
+一个开源的实现，是Hadoop和Hbase的重要组件；它是一个为分布式应用提供一致性服
+务的软件，提供的功能包括：配置维护、域名服务、分布式同步、组服务等。
+
+ZooKeeper的目标就是封装好复杂易出错的关键服务，将简单易用的接口和性能高效、
+功能稳定的系统提供给用户。
+
+ZooKeeper包含一个简单的原语集，提供Java和C的接口。
+
+zookeeper采用类似于文件系统的目录树数据模型，编程方便。
+
+* 安装依赖
+** 安装java
+ - 下载jdk-8u121-linux-x64.tar.gz，http://www.oracle.com/technetwork/java/javase/downloads/index.html
+ - 解压，tar zxvf jdk-8u121-linux-x64.tar.gz -C ~/Program
+ - 设置~/.bashrc，并使其生效
+    : export JAVA_HOME=/home/sqlfocus/Program/jdk1.8.0_121
+    : export JRE_HOME=${JAVA_HOME}/jre
+    : export CLASSPATH=.:${JAVA_HOME}/lib:${JRE_HOME}/lib
+    : export PATH=${JAVA_HOME}/bin:$PATH
+ - 测试安装是否成功
+    : java -version
+
+* 服务器
+下载zookeeper安装包，zookeeper-3.5.2-alpha.tar.gz
+ #+BEGIN_EXAMPLE
+ $ tar zxvf ~/Downloads/zookeeper-3.5.2-alpha.tar.gz ~/work
+ $ cd ~/work/zookeeper-3.5.2-alpha
+ $ cp conf/zoo_sample.cfg conf/zoo.cfg
+ $ ./bin/zkServer.sh start                        运行模式：standalone mode，单机调试
+ #+END_EXAMPLE
+
+ #+BEGIN_EXAMPLE
+ $ emacs -nw conf/zoo.cfg                         运行模式：replicated mode，实际部署
+     tickTime=2000
+     dataDir=/tmp/zookeeper
+     clientPort=2181
+     initLimit=5
+     syncLimit=2
+     server.1=zoo1:2888:3888    提供zk服务的服务器，前端口用于server互联，后端口用于选举
+     server.2=zoo2:2888:3888    zoo1/zoo2/zoo3需在/etc/hosts等地方设置其对应的地址
+     server.3=zoo3:2888:3888
+ $ ./bin/zkServer.sh start
+ #+END_EXAMPLE
+
+* 客户端
+ #+BEGIN_EXAMPLE
+ $ cd ~/work/zookeeper-3.5.2-alpha
+ $ ./bin/zkCli.sh -server 127.0.0.1:2181          命令行式客户端，方便试用
+ $ [zk: 127.0.0.1:2181(CONNECTED) 1] help
+ $ [...] ls /
+ $ [...] create /zk_test my_data                  创建测试节点，并赋上数据"my_data"
+ $ [...] ls /
+ $ [...] get /zk_test
+ $ [...] set /zk_test another_data
+ $ [...] get /zk_test
+ $ [...] delete /zk_test
+ $ [...] ls /
+ $ [...] quit
+ #+END_EXAMPLE
+
+* 自开发客户端
+ - 安装zk库及头文件
+   : $ tar zxvf ~/Downloads/zookeeper-3.5.2-alpha.tar.gz ~/work
+   : $ cd ~/work/zookeeper-3.5.2-alpha/src/c
+   : $ ./configure
+   : $ make
+   : $ make install
+ - 开发自研程序，包含头文件
+   : #include <zookeeper/zookeeper.h>
+   :
+   : 注意利用编译选项“-DTHREADED”支持多线程版本
+
+* 基本概念
+** 数据模型
+hierarchal name space, much like a distributed file system; only difference 
+is that each node in the namespace can have data associated with it as well 
+as children.
+
+** znode
+每个zookeeper树的节点都对应一个znode，维护其状态，包括版本信息、时间戳、数
+据等；每个客户端可以watch感兴趣的节点，一旦节点状态变更，则触发事件并通知
+客户端。
+
+节点数据的读写是原子性的；节点拥有ACL可控制数据的操控。
+
+zk支持临时节点，与创建节点的session拥有相同的生命周期，不允许其拥有孩子节点。
+
+** session
+A ZooKeeper client establishes a session with the ZooKeeper service by 
+creating a handle to the service using a language binding.
+利用会话描述客户端连接zk服务；会话有三种状态，CONNECTING/CONNECTED/CLOSED;
+实现中利用64-bit表示会话，并传给客户端；当客户端断开连接并重新连接其他服务
+器时，可以传递此session id到新服务器。
+
+** watch
+getData()/getChildren()/exists() - have the option of setting a watch as a
+side effect.
+A watch event is *one-time* trigger, sent to the client(强一致性，客户端接
+收的事件顺序即事件真实发生的顺序)that set the watch, which occurs when the 
+data for which the watch was set changes.
+
+** 注意点
+ - 节点数据量级1M(正常情况下，要远远小于此值)
+ - watch是单次触发的，继续watch需重新注册
+ - 理论上，watch触发到重新注册watch存在窗口，client会遗漏此窗口内的事件
+ - A watch object, or function/context pair, will only be triggered once for a given notification
+ - When you disconnect from a server (for example, when the server fails), you will not get any watches until the connection is reestablished
+
+* 参考
+ - [[http://zookeeper.apache.org/][官网]]
+ - [[https://cwiki.apache.org/confluence/display/ZOOKEEPER/Index][wiki]]
+
+
+
+
+
+
+
+
+
+
+
