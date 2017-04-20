@@ -1,0 +1,20 @@
+#+TITLE: eBPF简介
+#+AUTHOR: sqlfocus
+
+
+本文档仅仅用于定位ebpf相关的资料。
+
+* 参考
+ - [[https://github.com/iovisor/bcc][bcc]]
+ - [[https://github.com/sqlfocus/linux/blob/master/bpf.org][自注解]]
+
+
+
+
+
+
+
+
+
+
+
