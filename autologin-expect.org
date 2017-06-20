@@ -16,8 +16,11 @@ sudo apt-get install expect
 
       #auto ssh login
       spawn ssh root@www.test.com
-      expect "*password:"
-      send "123456\r"
+      expect {
+        "yes/no" { send "yes\n"; exp_continue}
+        "password:" { send "123456\n" }
+      }
+      exec sleep 3
       expect "*#"
       interact                  #交互模式，代理模式可用"expect eof"替换
   #+END_EXAMPLE
@@ -26,24 +29,60 @@ sudo apt-get install expect
   - 先手动ssh目标机以保存密匙 :: 因为脚本没有考虑此信息，不然会报错
   - 命令登陆远程机器 :: $ ./www.test.com
 
-* 实现ssh跳板机登录
+* 自动登录并执行特定命令
   #+BEGIN_EXAMPLE
-  $ touch www.test.com
-  $ chmod +x www.test.com
-  $ vi www.test.com
-      #!/usr/bin/expect
+  #!/usr/bin/env expect
+  
+  
+  ###参数校验
+  if { $argc != 0 } {
+    send_user "NO need param\n"
+    exit
+  }
 
-      #auto ssh login
-      spawn ssh root@www.test.com
-      expect "*password:"
-      send "123456\r"
+  ###自定义全局参数
+  set CC_NUM 16
+  set CC_IP_BEG_INDEX 13
+  set CC_IP_PREFIX "61.240.153"
+  set SCRIPT_NAME "./set_all.sh"
+  set U_PASSWD "aaaa@1704"
+  set M_PASSWD "3obtyBR\$87I{|xG_pDtm"
+  ###命令超时
+  set timeout 60
+  
+  
+  ###连接设备
+  while {$CC_NUM} {
+    #连接跳板机
+    spawn ssh lisongqing@jump3.oss.letv.cn -p 50022
+    expect {
+        "yes/no" { send "yes\n"; exp_continue}
+        "password:" { send "$U_PASSWD\n" }
+        timeout {send_user "connect jump3.oss.letv.cn timeout...\n"; exit}
+    }
 
-      expect "*#"
-      send "ssh root@www.another.com\r"
-      expect "*password:"
-      send "234567\r"
+    #连接设备
+    set CC_IP_SUFFIX  [expr $CC_NUM+$CC_IP_BEG_INDEX]
+    send_user "connect $CC_IP_PREFIX.$CC_IP_SUFFIX...\n"
+    
+    exec sleep 3
+    send ":ssh root@$CC_IP_PREFIX.$CC_IP_SUFFIX\n"
+    expect {
+        "yes/no" { send "yes\n"; exp_continue}
+	"password:" { send "$M_PASSWD\n"; exp_continue}
+	"*#" { send "cd /root; (nohup $SCRIPT_NAME); exit\n"}    ###此处的nohup保证后台执行
+	timeout {send_user "connect $CC_IP_PREFIX.$CC_IP_SUFFIX timeout...\n"; exit}
+    }
+    exec sleep 3
+    send ":q\n"
 
-      interact                  #交互模式，代理模式可用"expect eof"替换
+    #更新计数
+    set CC_NUM  [expr $CC_NUM-1]
+  }
+
+  ###配置结束
+  send_user "update finished!!!\n"
+  send "exit\n"
   #+END_EXAMPLE
 
 
