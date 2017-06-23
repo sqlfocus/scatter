@@ -31,3 +31,78 @@
 
 
 
+* 高精度计数器
+linux内核提供的jiff计数器，精度不高，一般内核态HZ值为1000, 用户态为100, 构
+建于此的函数包括clock/times()等。
+
+如果需要度量非常短的时间，或需要极高的时间精度，就需要使用特定于平台的资源；
+绝大多数处理器都包含随时钟周期不断递增的计数寄存器，它是完成高分辨率计时任
+务的 *唯一* 可靠途径。
+
+** linux提供的函数
+time()提供秒级精度
+gettimeofday()提供微妙级精度
+clock_gettime()提供纳秒级精度
+
+** TSC
+最有名的计数器寄存器是TSC(timestamp counter, 时间戳计数器)，x86平台从Pentium
+开始提供，可通过rdtsc指令读取；不过多核时代，其精度值大大降低，建议利用内核
+提供的高精度函数代替，如clock_gettime()
+ - 不能保证同一块主板上每个核的TSC是同步的
+ - CPU的时钟频率可能变化，如笔记本电脑的节能功能
+ - 乱序执行导致RDTSC测量周期数不准，这个问题从Pentium Pro时代就存在
+
+#+BEGIN_EXAMPLE
+#include<stdio.h> 
+#include<stdlib.h>
+#include<linux/types.h>
+
+#define TIMES 100
+#define SIZE 1024
+
+__u64 rdtsc()
+{
+    __u32 lo,hi;
+
+    __asm__ __volatile__ ("rdtsc":"=a"(lo),"=d"(hi));
+    return (__u64)hi<<32|lo;
+}
+
+int myfunction()
+{
+    int i;
+    char *p = NULL;
+    for(i = 0;i<TIMES;i++)
+    {
+        p = (char*)malloc(SIZE*sizeof(char));
+        if(p)
+        {
+            free(p);
+        }
+        else
+        {
+            printf("malloc failed when i = %d\n",i);
+        }
+    }
+    return 0;
+}
+int test_rdtsc()
+{
+    __u64 begin;
+    __u64 end;
+
+    begin = rdtsc();
+    myfunction();
+    end = rdtsc();
+    printf("myfunction cost %llu CPU cycles\n",end-begin);
+    return 0;
+}
+
+int main()
+{
+    test_rdtsc();
+    return 0;
+}
+#+END_EXAMPLE
+
+
