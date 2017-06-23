@@ -1,0 +1,33 @@
+#+TITLE: 小技巧汇总
+#+AUTHOR: sqlfocus
+
+
+本文档收录学习过程中遇到的小技巧，以期借助此可提高代码效率！
+
+
+* 环绕情况下比较大小或计算差值
+ #+BEGIN_EXAMPLE
+ 此宏定义在~/include/linux/jiffies.h，表达了a代表的时间是否在b后边，它们
+ 的值为u32, 50天左右溢出一次，此比较可屏蔽溢出回绕问题。
+ #define time_after(a,b)		\
+	(typecheck(unsigned long, a) && \
+	 typecheck(unsigned long, b) && \
+	 ((long)((b) - (a)) < 0))
+
+
+ 由此可推导出防止回绕的差值计算式如下
+ diff = (long)a - (long)b
+ #+END_EXAMPLE
+
+
+
+
+
+
+
+
+
+
+
+
+
