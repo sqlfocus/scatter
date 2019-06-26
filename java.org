@@ -1,0 +1,54 @@
+本文档摘录java的学习资料，及环境安装，备忘
+
+* 安装java/maven
+以下以Mac OS X环境为例，其他系统后续补充
+- 下载java se
+   : jdk-8u161-macosx-x64.dmg
+   : http://www.oracle.com/technetwork/java/javase/downloads/index.html
+- 下载maven
+   : apache-maven-3.5.2-bin.tar.gz
+   : https://maven.apache.org/download.cgi
+- 安装java se
+   : 双击安装
+- 安装maven
+   : 解码即可
+- 设置环境变量
+   : export M2_HOME=/Users/sqlfocus/Program/apache-maven
+   : export PATH=$PATH:$M2_HOME/bin
+   :
+   : export JAVA_HOME=$(/usr/libexec/java_home)
+   : export PATH=$PATH:$JAVA_HOME/bin
+   : export CLASS_PATH=$JAVA_HOME/lib
+- 构建单用户本地~/.m2，避免mvn配置影响其他用户
+   : mvn help:system
+   : cp $M2_HOME/conf/settings.xml ~/.m2
+
+* java工程目录结构
+#+BEGIN_EXAMPLE
+  project-dir      工程目录
+    pom.xml        mvn配置(project object model)
+    src
+      main
+        java       存放源代码
+          ...
+        resources  资源文件
+          ...
+      test
+        java
+          ...      存放单元测试代码
+#+END_EXAMPLE
+
+* 简单命令行
+- 查看版本号
+  : java -version
+  : mvn -v
+- MVN编译、测试、打包、安装、运行
+  : mvn clean compile
+  : mvn clean test
+  : mvn clean package
+  : mvn clean install
+  : java -cp target/xxx.jar 包名.类名
+- java命令编译、运行
+  : javac xxx.java
+  : java xxx
+
