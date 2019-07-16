@@ -10,6 +10,8 @@ you to replace parts of your system under test with mock
 objects and make assertions about how they have been used.
 '''
 ATTR = "OLD"
+def TestFunc():
+    pass
 class ProductionClass:
     '''
     test class
@@ -63,7 +65,18 @@ class TestPatch(unittest.TestCase):
             patch_method_sub.assert_called_with(1, 2, 3)
         test_class_mem()
 
-        #case3: useful for 'setup'/'teardown()'
+        #case3: module method
+        @unittest.mock.patch("__main__.TestFunc", return_value="hi")
+        def test_module_mem(patch_TestFunc):
+            self.assertEqual(TestFunc(), "hi")
+            patch_TestFunc.assert_called_with()
+            
+            patch_TestFunc.return_value = 3   #set return value
+            self.assertEqual(TestFunc(), 3)
+            patch_TestFunc.assert_called_with()
+        test_module_mem()
+
+        #case4: useful for 'setup'/'teardown()'
         config = {'method.return_value': 3, 'other.side_effect': KeyError}
         patcher = unittest.mock.patch('__main__.ProductionClass', **config)
         production_mock = patcher.start()
