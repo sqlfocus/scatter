@@ -1,0 +1,49 @@
+#+TITLE: python调测工具pdb
+#+AUTHOR: sqlfocus
+
+本文档记录python调试工具pdb的使用，一杯后续查阅。
+
+* 启动
+- 非侵入式方法 :: ~python3 -m pdb test.py~
+- 侵入式方法 :: ~import pdb;pdb.set_trace()~
+
+* 常用命令
+- 帮助命令
+   : help
+- 查看源码
+   : l/l 10 查看当前/指定位置前后11行源代码
+   : ll     查看当前函数或框架的所有源代码
+- 添加断点
+   : b        显示所有断点
+   : b lineno
+   : b filename:lineno 
+   : b functionname
+- 添加临时断点, 执行一次自动删除
+   : tbreak   显示所有临时断点
+   : tbreak lineno
+   : tbreak filename:lineno
+   : tbreak functionname
+- 清除断点
+   : cl
+   : cl filename:lineno
+   : cl bpnumber [bpnumber ...]
+- 打印变量
+   : p expression
+- 逐行调试命令
+   : s  执行下一行（能够进入函数体）
+   : n  执行下一行（不会进入函数体）
+   : r/return  执行下一行（在函数中时会直接执行到函数返回处）
+- 非逐行调试命令
+   : c  持续执行下去，直到遇到一个断点
+   : until lineno  持续执行直到运行到指定行（或遇到断点）
+   : j lineno      直接跳转到指定行（注意，被跳过的代码不执行）
+- 查看函数参数
+   : a  在函数中时打印函数的参数和参数的值
+- 打印变量类型
+   : whatis expression
+- 启动交互式解释器
+   : interact 使用当前代码的全局命名空间(使用ctrl+d返回pdb)
+- 打印堆栈信息
+   : w/where/bt
+- 退出pdb
+   : q
