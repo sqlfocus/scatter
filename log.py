@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+#pip3.x install ConcurrentLogHandler
+from cloghandler import ConcurrentRotatingFileHandler
 import logging
 import logging.handlers
 import os
@@ -37,7 +39,8 @@ __stream_handler.setLevel(level=logging.DEBUG)
 log.addHandler(__stream_handler)
 
 # 打印到日志文件，<TK!!!>log目录必须提前创建好
-__file_handler = logging.handlers.RotatingFileHandler(
+#__file_handler = logging.handlers.RotatingFileHandler(
+__file_handler = logging.handlers.ConcurrentRotatingFileHandler(  #支持多进程
     filename=os.path.join(__LOG_DIR, "mdms.log"),
     maxBytes=10000000, backupCount=3
 )
