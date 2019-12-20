@@ -151,15 +151,24 @@ class TestClassMock(unittest.TestCase):
         #case2: trace all calls
         real.method_sub.assert_called_once_with(1, 2, 3)
         self.assertEqual(real.method_sub.mock_calls, [unittest.mock.call.method_sub(1, 2, 3)])
+        self.assertEqual(real.method_sub.call_args_list, [unittest.mock.call(1, 2, 3)])
+        self.assertEqual(real.method_sub.call_args, unittest.mock.call(1, 2, 3))
+        self.assertEqual(real.method_sub.call_args[0], (1, 2, 3))
 
-        #case3: mock method, by another func
+        #case3: trace different args
+        mock = unittest.mock.Mock()
+        mock(1, 2, 3, k="4")
+        self.assertEqual(mock.call_args[0], (1, 2, 3))
+        self.assertEqual(mock.call_args[1], {"k" : "4"})
+
+        #case4: mock method, by another func
         vals = {(1, 2, 3): 1, (2, 3, 4): 2}
         def side_effect(*args):
             return vals[args]
         real.method_sub = unittest.mock.Mock(side_effect=side_effect)
         self.assertEqual(real.method(), 1)
 
-        #case4: mock for Method Calls on an Object
+        #case5: mock for Method Calls on an Object
         mock = unittest.mock.Mock()
         real.closer(mock)
         mock.close.assert_called_with()
