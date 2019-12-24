@@ -104,12 +104,15 @@ def main():
     #推荐几种字符串格式化方法
     say_hi = 'hello, "jack"'       #use ' if have " in string
     say_hi_r = r'C:\some\name'     #add "r" before string when "\" as normal character
-    f'Results of the {say_hi} {math.pi:.3f}'   #结果: Results of the hello, "jack" 3.142
-    'Results of the {} {:.3}'.format(say_hi, math.pi)
-    'Results of the {0} {1:.3}'.format(say_hi, math.pi)
-    'Results of the {word} {value:.3}'.format(word=say_hi, value=math.pi)
+    print(f'Results of the {say_hi} {math.pi:.3f}')   #结果: Results of the hello, "jack" 3.142
+    print('Results of the {} {:.3}'.format(say_hi, math.pi))
+    print('Results of the {0} {1:.3}'.format(say_hi, math.pi))
+    print('Results of the {word} {value:.3}'.format(word=say_hi, value=math.pi))
     tb = {'word': say_hi, 'value': math.pi}
-    'Results of the {0[word]} {0[value]:.3}'.format(tb)
+    print('Results of the {0[word]} {0[value]:.3}'.format(tb))
+    
+    print('''Results of the '{{"res":"{0[word]}", "val":"{0[value]:.3}"}}' '''.format(tb))
+                                   #注意当格式化对象为dict时，需要外套一层{}，否则报KeyError错误
 
     #模块
     os.__name__                #打印模块名，os
