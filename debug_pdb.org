@@ -64,3 +64,6 @@ def add(x, y):
 待出现提示信息后，通过telnet连接进入调试界面
 $ telnet localhost 6900
 #+END_EXAMPLE
+
+* pudb
+界面化，可以研究，感觉难操控
