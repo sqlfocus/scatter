@@ -2,6 +2,7 @@
 #+AUTHOR: sqlfocus
 
 本文档记录python调试工具pdb的使用，一杯后续查阅。
+注意，pdb不能调试子进程，需借助celery.contrib.pdb
 
 * 启动
 - 非侵入式方法 :: ~python3 -m pdb test.py~
@@ -47,3 +48,19 @@
    : w/where/bt
 - 退出pdb
    : q
+* celery.contrib.pdb
+#+BEGIN_EXAMPLE
+from celery import task
+from celery.contrib import rdb
+
+@task()
+def add(x, y):
+    result = x + y
+    rdb.set_trace()  # <- set break-point
+    return result
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+待出现提示信息后，通过telnet连接进入调试界面
+$ telnet localhost 6900
+#+END_EXAMPLE
