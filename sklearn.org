@@ -1,0 +1,23 @@
+#+TITLE: scikit-learn简介
+#+AUTHOR: sqlfocus
+
+本文档记录scikit-learn的学习历程，并摘录其使用技巧，希望为后
+续提供参考！
+
+scikit-learn主要提供传统机器学习框架，并不设计深度学习等；它
+提供丰富的数据处理工具库，如线性回归、SVM等；广泛用于数据预
+处理分类、聚类、数据降维、回归等
+
+* 安装
+#+BEGIN_EXAMPLE
+#python版本要求>=3.7
+#python3 -m pip install --upgrade pip
+pip3 install --upgrade pip    #如有必要升级pip
+pip3 install -U scikit-learn  #安装
+pip3 install matplotlib
+python3 -c "import sklearn; sklearn.show_versions()"  #显示版本
+#+END_EXAMPLE
+
+* 参考
+- [[https://scikit-learn.org/stable/][官网]]
+
