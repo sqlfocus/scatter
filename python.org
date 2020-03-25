@@ -23,6 +23,16 @@
   :                                        #   Missing separate debuginfos, use: debuginfo-install python36-3.6.6-1.el7.x86_64
   :   curl -O https://bootstrap.pypa.io/get-pip.py
   :   sudo /usr/bin/python36 get-pip.py    #安装pip3.6
+- 包安装
+  : wget --no-check-certificate https://www.python.org/ftp/python/3.8.2/Python-3.8.2.tgz
+  : tar zxvf Python-3.8.2.tgz
+  : cd Python-3.8.2
+  : ./configure --enable-optimizations --prefix=/opt/Program/python3
+  : make
+  : make install
+  :
+  : 如果make报错，"Could not import runpy module"，说明gcc版本过低
+  : 需要去掉./configure中选项--enable-optimizations
 
 * 更新pip
 - 方式1 :: python3 -m pip install --upgrade pip
@@ -30,6 +40,9 @@
   : 副作用，pip将是最新的pip3，对应python3的版本
 
 * 知名python库
+- aiohttp          :: 异步http客户端
+- dnspython        :: 异常强大的dns客户端封装，可单独解析、组包
+   : 但不支持异步，虽然内部使用了epoll，但仅用于监控socket是否可用等
 - gevent           :: 高效epoll封装
 - pexpect          :: 自动交互，ssh登陆等
 - tornado          :: 高效率http服务器，底层epoll
