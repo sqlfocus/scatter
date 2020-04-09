@@ -77,11 +77,27 @@ lua的便捷式开发；并以lua语言开发了许多第三方模块儿，极�
 注意，openresty源码包已经包含了nginx和luajit的安装包，因此它们不需要单独安装。
 
   #+BEGIN_EXAMPLE
+  for Ubuntu/Centos
+
   下载源码包，[[http://openresty.org/en/download.html][网址]]
   $ tar zxvf openresty-1.11.2.1.tar.gz
   $ cd openresty-1.11.2.1
   $ ./configure --prefix=/home/sqlfocus/Program/openresty --with-luajit 
                 --without-http_redis2_module --with-http_iconv_module
+  $ make
+  $ make install
+  #+END_EXAMPLE
+
+  #+BEGIN_EXAMPLE
+  for mac os X
+  
+  #10.15版本需要执行此句，否则报错“make[1]: *** [lj_folddef.h] Segmentation fault: 11”
+  $ export MACOSX_DEPLOYMENT_TARGET=10.14
+
+  #下载pcre/openssl源码并解压，编译时指定目录
+  $ ./configure --prefix=/home/sqlfocus/Program/openresty
+                --with-openssl=/path/to/openssl/dir 
+                --with-pcre=/path/to/pcre/dir
   $ make
   $ make install
   #+END_EXAMPLE
