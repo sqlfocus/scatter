@@ -1,0 +1,40 @@
+#+TITLE: go简介
+#+AUTHOR: sqlfocus
+
+本文档记录go的学习历程，并摘录go的使用技巧，希望为后
+续提供参考！
+
+* 安装go
+- Mac OS X
+  : brew install go
+  :
+  : 更新~/.zshrc(~/.bash_profile)等
+  :   export GOROOT=/usr/local/opt/go/libexec
+  :   export GOPATH=$HOME/.go
+  :   export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+  : source ~/.zshrc
+
+* 常用命令
+- 编译运行
+  : 编译运行
+  :   go build xxx
+  :   ./xxx
+  :
+  : 一次性运行
+  :   go run xxx.go
+- 查看帮助文档
+  : go doc net
+  : go doc net.http
+- 命令行下载
+  : go get github.com/rogpeppe/godef
+
+* 约定
+- 驼峰命名法
+- 大写首字母的标识符将从包中被导出，小写则不会
+
+* 知名go库
+包描述可以查看网站 ~https://pkg.go.dev/~ ~https://golang.org/pkg/~
+- strings          :: 基于utf-8的字符串操作
+- msgpack          :: 消息打包
+- cobra            :: 命令行封装
+

@@ -48,4 +48,6 @@
 - tornado          :: 高效率http服务器，底层epoll
 - sanic            :: 最高效的http服务器，底层epoll
 - scikit-learn     :: 传统机器学习库
+- tracemalloc/memory-profiler
+    : 跟踪内存使用，检测内存泄漏等
 
