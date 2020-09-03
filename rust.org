@@ -1,0 +1,138 @@
+#+TITLE: rust简介
+#+AUTHOR: sqlfocus
+
+本文档记录rust的学习历程，并摘录rust的使用技巧，备用！
+
+* 替换源，加速依赖安装
+#+BEGIN_EXAMPLE
+###创建文件
+touch ~/.cargo/config
+
+###添加以下内容
+#替换为中科大的镜像源
+[source.crates-io]
+registry = "https://github.com/rust-lang/crates.io-index"
+replace-with = 'ustc'
+
+#清华
+[source.tuna]
+registry = "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git"
+  
+#中科大
+[source.ustc]
+registry = "git://mirrors.ustc.edu.cn/crates.io-index"
+
+#上交
+[source.sjtu]
+registry = "https://mirrors.sjtug.sjtu.edu.cn/git/crates.io-index"
+
+#rustcc社区
+[source.rustcc0]
+registry = "https://code.aliyun.com/rustcc/crates.io-index.git"
+
+[source.rustcc1]
+registry="git://crates.rustcc.cn/crates.io-index"
+
+[source.rustcc2]
+registry="git://crates.rustcc.com/crates.io-index"
+#+END_EXAMPLE
+
+* 重要概念
+** mut和shadow
+- shadow可改变变量类型，而mut本质上为同一个对象
+
+#+BEGIN_EXAMPLE
+###shadow, 两个x虽然相同命名，但后者覆盖了前者
+###指向不同的对象
+let x = 5;
+let x = x+1;
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+###强制指定为可变对象，可直接对其操作
+let mut x = 5;
+x = x+1;
+#+END_EXAMPLE
+  
+** ownership和borrowing
+- can have only one mutable reference to a particular piece of data in a particular scope
+- cannot have a mutable reference while we have an immutable one
+
+#+BEGIN_EXAMPLE
+###由于ownership转移，s1不能在println中继续使用
+fn main() {
+    let s1 = String::from("hello");
+    let (s2, len) = calculate_length(s1);
+    println!("The length of '{}' is {}.", s2, len);
+}
+
+fn calculate_length(s: String) -> (String, usize) {
+    let length = s.len();
+
+    (s, length)
+}
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE
+###借助reference，可以不必一直通过参数、返回值传递拥有权
+###称为borrowing
+fn main() {
+    let s1 = String::from("hello");
+    let len = calculate_length(&s1);
+    println!("The length of '{}' is {}.", s1, len);
+}
+
+fn calculate_length(s: &String) -> usize {
+    s.len()
+}
+#+END_EXAMPLE
+
+** ownership
+- Each value in Rust has a variable that’s called its owner
+- There can only be one owner at a time
+- When the owner goes out of scope, the value will be dropped
+- assigning a value to another variable moves it
+
+设计原则
+- Rust will never automatically create “deep” copies of your data
+
+** package/crate/module/path
+- A package   :: cargo new xxx
+  : is one or more crates that provide a set of functionality
+  : contains a Cargo.toml file that describes how to build those crates
+  :
+  : must contain zero or one library crates, and no more
+  : can contain as many binary crates as you'd like
+  : must contain at least one crate (either library or binary)
+- A crate     :: cargo new --lib xxx
+  : a binary or library
+  :
+  : crate root 
+  :   'src/main.rs' for binary crate
+  :   'src/lib.rs' for library crate
+  :   'src/bin' for multiple binary crate
+- A module
+  : useful for organizing your code, also define Rust’s privacy boundary
+  :
+  : all items are private by default, 'pub' make items public
+- A path   :: name items
+  : 'use' brings a path into scope
+
+* 常用命令
+- 更新rust
+   : rustc --version
+   : rustup update
+- 新建工程
+   : cargo new --cvs=none hello-rust
+   : 未指定版本管理工具, 默认 --cvs=git
+- 语法检查
+   : cargo check
+- 编译
+   : cargo build
+   : cargo build --release
+- 编译+运行
+   : cargo run
+- 当前项目依赖的帮助文档(在浏览器打开)
+   : cargo doc --open
+
+* 知名库
