@@ -1,0 +1,106 @@
+#+TITLE: Docker简介
+#+AUTHOR: sqlfocus
+
+本文档摘录Docker环境创建，及使用技巧，备忘！
+
+* 环境安装
+- Mac OS X
+  : 官网镜像包安装
+- 配置仓库/registry  :: 图标docker -> preferences -> Docker Engine
+  : {
+  :    "registry-mirrors": [ //增加的部分
+  :       "https://registry.docker-cn.com"
+  :    ],
+  :
+  :    "debug": true,        //老配置
+  :    "experimental": false
+  : }
+
+* Dockerfile
+参考 [[https://docs.docker.com/engine/reference/builder/][文件格式]]
+
+一般利用 ~Dockerfile~ 定义如何构建容器
+- 文件命名默认为 ~Dockerfile~
+- 构建命令 ~docker build -t myapp:0.1.0 -f /path/to/a/Dockerfile .~
+
+#+BEGIN_EXAMPLE
+FROM ubuntu:18.04
+COPY . /app
+RUN make /app
+CMD python /app/app.py
+#+END_EXAMPLE
+
+* Docker Compose
+参考 [[https://docs.docker.com/compose/][官网链接]]
+参考 [[https://docs.docker.com/compose/compose-file/][文件格式]]
+
+利用yaml文件定义应用运行环境，管理多个容器
+- 利用 ~Dockerfile~ 定义app环境
+- 利用 ~docker-compose.yml~ 定义app服务
+- 执行命令 ~docker-compose up~ 启动app服务
+
+#+BEGIN_EXAMPLE
+###docker-compose.yml 示例
+version: '2.0'
+services:
+  web:
+    build: .
+    ports:
+    - "5000:5000"
+    volumes:
+    - .:/code
+    - logvolume01:/var/log
+    links:
+    - redis
+  redis:
+    image: redis
+volumes:
+  logvolume01: {}
+#+END_EXAMPLE
+
+** 常用指令
+- docker-compose --help
+- docker-compose up -d  :: 后台启动
+- docker-compose stop   :: 停止后台运行的服务
+- docker-compose ps     :: 查看运行的容器
+- docker-compose run    :: 执行一次性命令
+
+* CI
+参考 [[https://docs.gitlab.com/ce/ci/yaml/README.html][文件格式]]
+
+用于自动集成、自动测试等功能
+
+* 常用命令
+- 总体
+  : docker info              //安装、配置信息
+  : docker --version         //版本号
+- 容器操作
+  : docker ps                //正在运行
+  : docker ps --all          //所有
+  :
+  : docker rm container_id   //删除容器
+  : docker rm container_name
+  :
+  :                          //等同于Dockerfile文件的作用，利用运行的容器制作镜像
+  : docker commit -m "just for test" -a "autor name" container_id Repository:tag
+- 镜像操作
+  : docker image ls          //查看全部镜像
+  : docker images
+  :
+  : docker rmi nginx         //删除镜像(<TK!!!>必须先删除其对应的容器)
+  :
+  :                          //拉取镜像
+  : docker pull Repository:tag
+  :
+  :                          //上传镜像
+  : docker tag Repository:tag  <remote server>/Repository:tag
+  : docker push <remote server>/Repository:tag
+- 跑镜像
+  : docker run -it --name my_container_name ubuntu     #CTRL+P+Q使其后台运行
+  : docker run --rm -it --name my_container_name ubuntu
+  : docker exec -it my_container_name /bin/bash        #挂接后台运行的container
+  : docker start my_container_name                     #重启已停止的container
+  : docker stop my_container_name
+  : docker kill my_container_name                      #关停container
+
+

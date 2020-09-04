@@ -55,6 +55,7 @@ x = x+1;
 #+END_EXAMPLE
   
 ** ownership和borrowing
+the compiler guarantees that references will never be dangling references
 - can have only one mutable reference to a particular piece of data in a particular scope
 - cannot have a mutable reference while we have an immutable one
 
@@ -117,6 +118,42 @@ fn calculate_length(s: &String) -> usize {
   : all items are private by default, 'pub' make items public
 - A path   :: name items
   : 'use' brings a path into scope
+
+** struct/tuple
+similar to tuples, pieces of a struct can be different types
+Unlike with tuples, you’ll name each piece of data
+
+Tuple structs are useful when you want to give the whole tuple
+a name and make the tuple be a different type from other tuples
+~struct Color(i32, i32, i32);~
+
+Unit-like structs can be useful in situations in which you need
+to implement a trait on some type but don’t have any data that
+you want to store in the type itself. 
+~struct test();~
+
+** NUll
+a null is a value that is currently invalid or absent for some reason
+
+Rust does not have nulls, but it does have an enum that can encode 
+the concept of a value being present or absent.
+#+BEGIN_EXAMPLE
+enum Option<T> {
+    Some(T),
+    None,
+}
+#+END_EXAMPLE
+
+** progagting errors
+使用 ~?~ 传递错误，大大简化了 ~match~ 语法
+
+** reference lifetime
+如果经过以下3条原则，仍然无法确定返回值的lifetime，则必须人工指定
+- each parameter that is a reference gets its own lifetime parameter
+  : fn foo<'a, 'b>(x: &'a i32, y: &'b i32);
+- if there is exactly one input lifetime parameter, that lifetime is assigned to all output lifetime parameters
+  : fn foo<'a>(x: &'a i32) -> &'a i32
+- if there are multiple input lifetime parameters, but one of them is ~&self~ or ~&mut self~ because this is a method, the lifetime of self is assigned to all output lifetime parameters
 
 * 常用命令
 - 更新rust
