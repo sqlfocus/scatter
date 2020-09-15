@@ -84,6 +84,8 @@ volumes:
   :                          //等同于Dockerfile文件的作用，利用运行的容器制作镜像
   : docker commit -m "just for test" -a "autor name" container_id Repository:tag
 - 镜像操作
+  : docker search centos     //查询docker hub中的镜像
+  :
   : docker image ls          //查看全部镜像
   : docker images
   :
