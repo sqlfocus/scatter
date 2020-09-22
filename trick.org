@@ -19,18 +19,6 @@
  diff = (long)a - (long)b
  #+END_EXAMPLE
 
-
-
-
-
-
-
-
-
-
-
-
-
 * 高精度计数器
 linux内核提供的jiff计数器，精度不高，一般内核态HZ值为1000, 用户态为100, 构
 建于此的函数包括clock/times()等。
@@ -106,3 +94,27 @@ int main()
 #+END_EXAMPLE
 
 
+* 定制网卡名字, udev rules
+通过udev可以定制网卡的名字
+- 查看pci信息
+  : 查看.rules规则用到的字段
+  :   udevadm info -a -p /sys/class/net/ens2f2
+  : 查看执行过程，及暴露的环境变量(但不执行)
+  :   udevadm test -a ADD /sys/class/net/ens2f2
+- 修改文件, /etc/udev/rules.d/99-net-interfaces.rules
+  : 匹配MAC "00:22:46:3b:e0:67", 命名为"eth4"
+  :   SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="00:22:46:3b:e0:67", NAME="eth4"
+  :
+  : 匹配PCI "", 命名为"eth4"
+  :   SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", SUBSYSTEMS=="pci", KERNELS=="0000:02:00.2", NAME="eth4"
+- 验证是否生效
+  : 方法1
+  :   service network stop
+  :   udevadm control --reload-rules
+  :   udevadm trigger --attr-match=subsystem=net
+  :   service network start
+  : 方法2
+  :   dpdk-devbind.py -u 0000:02:00.2
+  :   udevadm control --reload-rules
+  :   udevadm trigger --attr-match=subsystem=net
+  :   dpdk-devbind.py -b igb  0000:02:00.2
