@@ -30,6 +30,15 @@ RUN make /app
 CMD python /app/app.py
 #+END_EXAMPLE
 
+** 如何替换已有容器的1号进程
+- 通过-v映射新的可执行文件
+  : 将外部的执行文件映射进去，覆盖原镜像的执行文件，如python程序
+- docker cp
+  : 将完毕程序拷贝覆盖原容器镜像, 并重启docker
+  :
+  : docker cp /path/src container-id:/dest/path/
+  : 如果/dest/path存在src目录将被覆盖，不存在则新建src目录，内容为/path/src
+
 * Docker Compose
 参考 [[https://docs.docker.com/compose/][官网链接]]
 参考 [[https://docs.docker.com/compose/compose-file/][文件格式]]
@@ -61,7 +70,10 @@ volumes:
 ** 常用指令
 - docker-compose --help
 - docker-compose up -d  :: 后台启动
+- docker-compose -f xxx.yml up -d  :: 制定yml文件
+- docker-compose up -d xxx         :: 仅启动某xxx服务
 - docker-compose stop   :: 停止后台运行的服务
+- docker-compose stop xxx          :: 仅停止某xxx服务
 - docker-compose ps     :: 查看运行的容器
 - docker-compose run    :: 执行一次性命令
 
@@ -100,9 +112,30 @@ volumes:
 - 跑镜像
   : docker run -it --name my_container_name ubuntu     #CTRL+P+Q使其后台运行
   : docker run --rm -it --name my_container_name ubuntu
+  : docker run --network=xxx -it ubuntu                #挂接到自创建网络xxx
+  : docker run --net=none/host -it ubuntu              #指定网络模式
   : docker exec -it my_container_name /bin/bash        #挂接后台运行的container
   : docker start my_container_name                     #重启已停止的container
   : docker stop my_container_name
   : docker kill my_container_name                      #关停container
+  : docker restart my_container_name                   #重启container
+- 网络相关
+  : docker network ls           #查看当前的docker网络
+  : docker network create xxx   #创建网络, 默认网桥模式
+  : docker network inspect xxx  #查看网络信息
+- 手工绑定容器网卡
+  : docker run --net=none -it --rm ubuntu              #无网络启动
+  : pid=docker inspect -f '{{.State.Pid}}' container   #查看容器PID
+  : mkdir -p /var/run/netns
+  : ln -s /proc/${pid}/ns/net /var/run/netns/${pid}
+  : ip link add veth_0 type veth peer name eth0
+  : brctl addif docker0 veth_0
+  : ip link set veth_0 up
+  : ip link set eth0 netns ${pid}
+  :                                                    #操控docker网络
+  : ip netns exec ${pid} ip link set dev eth0 name xxx
+  : ip netns exec ${pid} ip link set xxx up
+  : ip netns exec ${pid} ip addr add 172.17.0.100/24 dev xxx
+  : ip netns exec ${pid} ip route add default via 172.17.0.1
 
 

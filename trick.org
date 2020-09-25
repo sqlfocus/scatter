@@ -93,7 +93,6 @@ int main()
 }
 #+END_EXAMPLE
 
-
 * 定制网卡名字, udev rules
 通过udev可以定制网卡的名字
 - 查看pci信息
@@ -118,3 +117,8 @@ int main()
   :   udevadm control --reload-rules
   :   udevadm trigger --attr-match=subsystem=net
   :   dpdk-devbind.py -b igb  0000:02:00.2
+* python字典对象输出
+- 紧凑输出
+  : json.dumps([1, 2, 3, {'4': 5, '6': 7}], separators=(',', ':'))
+- 美化输出
+  : json.dumps({'4': 5, '6': 7}, sort_keys=True, indent=4)
