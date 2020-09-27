@@ -324,6 +324,7 @@ ab
    : gnice，nice用户的占比
  
 ** netperf
+todo
 
 ** netstat
 [系统级别][计数器]，网络接口的统计，TCP/IP栈的统计，以及每个链接的信息统计
@@ -353,29 +354,6 @@ ab
 
 ** oprofile
 [系统级别][剖析]，linux系统剖析
-
-** perf
-[系统级别][跟踪][剖析]，linux性能事件，跟踪静态和动态的探针；也包含剖析命令
- - 安装
-   : ubuntu
-   :    sudo apt-get install linux-tools-common
-   :    sudo apt-get install linux-tools-4.4.0-31-generic
-   :    sudo apt-get install linux-generic
-   : Centos
-   :    yum install perf
- - perf record -a -g -F 997 -p <pid>      :: 调用栈剖析
-   : 以997的频率，对进程号为pid的进程采样
-   :
-   : 利用指令perf record --stdio查看结果
- - perf sched record                      :: 调度器统计信息
-   : 利用perf sched latency等查看结果
- - perf stat -p <pid>                     :: 基于计数的CPU周期行为统计
-   : 通过CTRL-C退出后，可用查看性能计数器统计信息
- - perf top
-   : 系统剖析工具
- - perf list                              :: 罗列可以检查的计数器
-   : 通过perf stat -e xx,yy,zz -p <pid>观察对应的事件计数器
-   : 通过perf record -e xx,yy,zz -p <pid>观察对应的软件跟踪点
 
 ** pidstat
 linux任务的统计工具，可用监控特定任务的状态信息
@@ -610,6 +588,69 @@ linux任务的统计工具，可用监控特定任务的状态信息
 
 ** 工具
  - iperf                     :: 网络吞吐基线
+
+* Gprof/Sprof
+~apt-get install graphviz~ for dot
+~https://github.com/jrfonseca/gprof2dot~ for gprof2dot.py
+
+Linux下性能调优主要是其自带的Gprof、Sprof, 可进行函数调用次数、调用时
+间、调用关系等的分析
+
+** 分析主程序
+- 编译、链接添加-pg选项
+  : make CFLAGS=-pg LDFLAGS=-pg
+- 运行程序, 产生gmon分析文件/gmon.out
+  : ./a.out
+- 分析gmon文件，获得分析数据
+  : gprof -b a.out gmon.out -p   #调用频次、时间
+  : gprof -b a.out gmon.out -q   #调用关系
+- 生成调用关系图
+  : gprof a.out | python3 /path/to/gprof2dot.py |dot -Tpng -o outpu.png
+
+** 分析共享库
+[[https://www.man7.org/linux/man-pages/man1/sprof.1.html][步骤参考]]
+
+- 编译共享库, 携带-g参数
+- 执行运行共享库的主程序
+  : export LD_PROFILE_OUTPUT=${PWD}
+  : export LD_PROFILE=xxx.so
+  : export LD_LIBRARY_PATH=.
+- 分析共享库
+  : sprof xxx.so xxx.so.profile
+
+* perf
+Linux内核原生提供的性能分析工具, [系统级别][跟踪][剖析]，linux性能事件;
+借助此工具可打印[[https://github.com/brendangregg/FlameGraph][火焰图]], 快速分析系统瓶颈
+
+- 安装
+   : ubuntu
+   :    sudo apt-get install linux-tools-common
+   :    sudo apt-get install linux-tools-4.4.0-31-generic
+   :    sudo apt-get install linux-generic
+   : Centos
+   :    yum install perf
+- 火焰图工具集
+   : git clone https://github.com/brendangregg/FlameGraph.git
+- 采集数据           :: 生成perf.data
+   : perf record -F 997 -a -g -- sleep 60
+   :   以997的采集频率，对所有进程采样, 时长60s
+   : perf record -F 997 -p <pid> -g -- sleep 60
+   :   以997的采集频率，对pid进程采样, 时长60s
+- 生成火焰图
+   : perf script -i perf.data > perf.unfold
+   : ./FlameGraph/stackcollapse-perf.pl perf.unfold > perf.folded
+   : ./FlameGraph/flamegraph.pl perf.folded > perf.svg
+
+** 常用perf指令
+- perf sched record                      :: 调度器统计信息
+   : 利用perf sched latency等查看结果
+- perf stat -p <pid>                     :: 基于计数的CPU周期行为统计
+   : 通过CTRL-C退出后，可用查看性能计数器统计信息
+- perf top
+   : 系统剖析工具
+- perf list                              :: 罗列可以检查的计数器
+   : 通过perf stat -e xx,yy,zz -p <pid>观察对应的事件计数器
+   : 通过perf record -e xx,yy,zz -p <pid>观察对应的软件跟踪点
 
 * 参考书籍
  - 性能之颠
