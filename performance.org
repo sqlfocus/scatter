@@ -646,7 +646,7 @@ Linux内核原生提供的性能分析工具, [系统级别][跟踪][剖析]，l
    : 利用perf sched latency等查看结果
 - perf stat -p <pid>                     :: 基于计数的CPU周期行为统计
    : 通过CTRL-C退出后，可用查看性能计数器统计信息
-- perf top
+- perf top -p <pid>
    : 系统剖析工具
 - perf list                              :: 罗列可以检查的计数器
    : 通过perf stat -e xx,yy,zz -p <pid>观察对应的事件计数器

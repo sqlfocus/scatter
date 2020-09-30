@@ -1,0 +1,199 @@
+#+TITLE: 简述程序跟踪与调试手段
+#+AUTHOR: sqlfocus
+
+* curl
+可用仿真发起简单的HTTP请求
+
+  #+BEGIN_EXAMPLE
+  $ curl -i http://localhost                      输出协议头
+  $ curl -i --location http://localhost           跟踪重定向
+  $ curl -v -i http://localhost                   详细展示交互流程
+  #+END_EXAMPLE
+
+* gdb
+参考gdb.org
+
+* netstat
+此命令常常用于网络状态监控及调试，本地总结工作过程中常用的使用方式，以
+期增长运维调试能力。
+   - netstat -nta | awk 'NR>1 {print $6}' | sort | uniq -c
+      : 统计所有TCP链路的状态，输出结果为
+      :     1 ESTABLISHED
+      :     1 Foreign
+      :     5 LISTEN
+   - netstat -s
+      : 输出各协议的统计信息
+
+* proc目录
+一般情况下，linux的proc目录蕴藏着丰富的内核信息，后续逐步完善。
+  - cat /proc/net/sockstat
+      : 查看插口状态统计
+      : inuse，活跃状态
+      : orphan，孤儿状态，close调用后，tw状态前
+      : tw，timewait状态，资源待回收的状态
+      : mem，以页为单位的内存使用计数
+
+* ps
+  - ps -eHF
+      : -H 展示继承层次 
+      : -e 展示所有进程
+      : -F 展示所有的项 
+      : 
+      : 输出首行    ps -eHF | grep UID | grep -v grep
+      : 输出有效行  ps -eHF | grep /key-word/ | grep -v grep
+      : 首行关键字参考man ps
+  - ps -eLo user-defined-format
+      : -L 展示线程信息
+      : -o 自定义输出格式
+      :
+      : ps -eLo %cpu,%mem,uid,ppid,pid,tid,psr,cmd
+      :   psr 绑定的处处理器
+      :   tid 线程id
+      :   具体关键字参考man ps
+
+* pstack
+效果类似于gdb bt指令的效果
+
+  #+BEGIN_EXAMPLE
+  $ sudo apt-get install pstack
+  $ sudo pstack PID-of-program
+  #+END_EXAMPLE
+
+* strace/ltrace
+分别用来查看应用程序执行过程中所发起的系统函数调用和动态库函数调用
+
+  #+BEGIN_EXAMPLE
+  # strace -p PID-of-program
+  # ltrace -p PID-of-program
+  #+END_EXAMPLE
+
+* strip
+一般公司产品，包括可执行程序、动态共享库，的符号表都被移除，遇到
+core dump后，为了便于调试，需要将符号表导入到/usr/lib/debug目录下。
+~apt-get install elfutils~
+~yum install elfutils~
+
+#+BEGIN_EXAMPLE
+#include<stdio.h>
+#include<stdlib.h>
+
+int bar() {
+    char *p = NULL;
+    fprintf(stderr,"I am bar，I will core dump\n");
+    fprintf(stderr,"%s",p);
+    return 0;
+}
+int foo() {
+    int i ;
+    fprintf(stderr, "I am foo,I will call bar\n");
+    bar();
+    return 0;
+}
+int main() {
+    fprintf(stderr,"I am main, I wll can foo\n");
+    foo();
+    return 0;
+}
+#+END_EXAMPLE
+
+- 编译debug版本
+  : gcc -o test -g test.c
+  :
+  : ls -l test
+  :    -rwxrwxr-x 1 lisongqing lisongqing 11072 Sep 30 00:43 test
+- 查看section信息, 共33个
+  : readelf -S test
+  :
+  :  [26] .debug_aranges    PROGBITS         0000000000000000  00001039
+  :       0000000000000030  0000000000000000           0     0     1
+  :  ...
+  :  [30] .debug_str        PROGBITS         0000000000000000  000015f8
+  :       000000000000028a  0000000000000001  MS       0     0     1
+  :  [31] .symtab           SYMTAB           0000000000000000  00001888
+  :       00000000000006c0  0000000000000018          32    48     8
+  :  [32] .strtab           STRTAB           0000000000000000  00001f48
+  :       0000000000000233  0000000000000000           0     0     1
+  :  [33] .shstrtab         STRTAB           0000000000000000  0000217b
+  :       000000000000013e  0000000000000000           0     0     1
+- 去掉debug信息, 剩余28个段
+  : strip --strip-debug test
+  :
+  : readelf -S test
+  :   debug段被去除
+  : ls -l test
+  :   -rwxrwxr-x 1 lisongqing lisongqing 8328 Sep 30 00:48 test
+  : nm test
+  :   符号表仍然存在
+- 执行程序, 产生core文件, 仍然可以gdb调试
+  : gdb -c /path/to/core /path/to/test
+  :   因为符号表存在, 仍可调试
+- 去除符号表, 剩余26个段
+  : strip --strip-all test
+  :
+  : ls -l test
+  :   -rwxrwxr-x 1 lisongqing lisongqing 6120 Sep 30 00:54 test
+  : nm test
+  :   nm: test: no symbols
+- 还可以继续移除其他段（非必要, 无法节省更多空间）
+  : objcopy -R .comment -R .note.ABI-tag -R .gnu.version test
+- 此时无法gdb调试
+  : gdb -c /path/to/core /path/to/test
+  :   bt显示??
+- 重新编译程序, 保留符号表, 剩余28个段
+  : gcc -g test.c -o test
+  : eu-strip test -f test.sym
+  :
+  : readelf -S test
+  :   debug信息/符号表均被移除, 但多了如下段
+  :   [28] .gnu_debuglink    PROGBITS         0000000000000000  00003034
+  :       0000000000000010  0000000000000000           0     0     4
+  :
+  : objdump -s -j .gnu_debuglink test
+  :   0000 74657374 2e73796d 00000000 dd7cf18f  test.sym.....|..
+  :
+  : gdb test       #仍然显示符号表
+  :  (gdb) r
+  :  (gdb) bt
+  :
+  : mv test.sym /path/to/other/dir
+  : gdb test       #无符号表, 显示"??"
+  :  (gdb) r
+  :  (gdb) bt
+  :  (gdb) show debug-file-directory    #符号表搜索路径/usr/lib/debug
+  :
+  : strace gdb -c /path/to/core test  >> strace.log 2>&1
+  :   可查看gdb符号表查找路径, 1)当前路径, 2)/usr/lib/debug
+- 分离调试
+  : 方案1 - 将符号表拷贝到和待调试程序相同目录
+  : 方案2 - 将符号表拷贝到/usr/lib/debug/"path/to/test", 如 /usr/lib/debug/root/
+  :         "path/to/test"为test程序的绝对路径
+
+* systemtap
+可用生成火焰图，了解代码的执行流程，查找具体的函数；并且大多数调试功能
+都是在程序动态运行的时候搞定，酷!!!
+
+refer <systemtap.org>
+
+* top
+- 多线程的运行情况
+  : top -H -p <pid>          
+- 核心绑定
+  : top界面按‘f’
+  : 按‘空格’选择P
+  : 按‘ESC’退出
+
+* ulimit
+ulimit命令用于查看系统限制
+  - ulimit -n  :: 最大打开的文件数
+  - ulimit -u  :: 最大用户进程数
+  - ulimit -a  :: 所有限制
+
+当然此命令也可用于修正系统限制
+  - ulimit -n 65536    :: 修改最大打开文件数，即时生效，重启失效
+  - ulimit -SHn 65536  :: -S指soft软限制，-H指hard硬限制
+
+* 日志
+
+
+
+
