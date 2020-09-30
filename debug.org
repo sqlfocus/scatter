@@ -192,7 +192,32 @@ ulimit命令用于查看系统限制
   - ulimit -n 65536    :: 修改最大打开文件数，即时生效，重启失效
   - ulimit -SHn 65536  :: -S指soft软限制，-H指hard硬限制
 
-* 日志
+* 产生core文件
+** ubuntu
+- 配置core文件格式/路径
+  : echo "/data/cores/core_%e_%p_%t"  | sudo tee /proc/sys/kernel/core_pattern
+  :
+  :   %p - insert pid into filename
+  :   %u - insert current uid
+  :   %g - insert current gid
+  :   %s - insert signal that caused the coredump
+  :   %t - insert UNIX time that the coredump occurred
+  :   %h - insert hostname where the coredump happened
+  :   %e - insert coredumping executable name
+- 放开core文件大小限制
+  : ulimit -c unlimited
+  :
+  : ulimit -a           #查看是否生效, 如果为0则禁止产生core文件
+
+** docker容器
+- 物理机设置core文件格式+输出路径
+  : echo "/data/cores/core_%e_%p_%t"  | sudo tee /proc/sys/kernel/core_pattern
+- 启动容器
+  : docker run -it -d /tmp/core:/data/cores test:v1.0 /bin/bash
+- 容器内模拟产生core
+  : ulimit -c unlimited
+  : kill -s SIGSEGV $$
+
 
 
 
