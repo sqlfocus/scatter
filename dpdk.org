@@ -1,0 +1,16 @@
+#+TITLE: DPDK使用注意点
+#+AUTHOR: sqlfocus
+
+本文档摘录DPDK环境使用注意点，备忘！
+
+- rte_eal_init()函数尽量放置在main()函数起始处
+  : 如果单DPDK程序运行，可不遵守本条规则
+  : 当主/辅进程(primary/secondary)运行时, 辅进程main()起始应该放置
+  : rte_eal_init(), 否则容易出现以下报错
+  :    Cannot mmap memory for rte_config at [0x7ffff7ff2000], 
+  :    got [0x7ffff7ff0000] - please use '--base-virtaddr' option
+- 主/辅进程运行时, 尽量使用相同版本的DPDK
+  : 除开相同版本外, 编译参数也应该尽量相同
+  : 以保证内部数据表具有相同的组织形式, 避免段错误
+  :    Program received signal SIGBUS, Bus error.
+  :    rte_eal_config_reattach () at ...
