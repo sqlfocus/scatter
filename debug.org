@@ -10,6 +10,19 @@
   $ curl -v -i http://localhost                   详细展示交互流程
   #+END_EXAMPLE
 
+* df
+- 查看磁盘大小 :: df -h
+
+* du
+- 查看目录大小 
+  : du -h
+  : du -h --max-depth=1
+- 查看目录总容量
+  : du -sh
+- 查看子目录容量
+  : du -sh *
+  : du -sh * | sort -n
+
 * gdb
 参考gdb.org
 

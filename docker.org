@@ -109,6 +109,9 @@ volumes:
   :                          //上传镜像
   : docker tag Repository:tag  <remote server>/Repository:tag
   : docker push <remote server>/Repository:tag
+  :
+  : docker save -o cc.tar bb:v1.0
+  : docker load < cc.tar     //打包镜像, 并重新导入镜像
 - 跑镜像
   : docker run -it --name my_container_name ubuntu     #CTRL+P+Q使其后台运行
   : docker run --rm -it --name my_container_name ubuntu
@@ -137,5 +140,6 @@ volumes:
   : ip netns exec ${pid} ip link set xxx up
   : ip netns exec ${pid} ip addr add 172.17.0.100/24 dev xxx
   : ip netns exec ${pid} ip route add default via 172.17.0.1
-
+- 日志
+  : docker logs 容器名/id                              #查看容器日志
 
