@@ -25,6 +25,12 @@
 
 * gdb
 参考gdb.org
+- 只运行当前线程
+  : set scheduler-locking on   #开启
+  : set scheduler-locking off  #关闭
+- 调试宏
+  : 添加编译选项 -g3 -gdwarf-2
+  : 在gdb中展开宏 macro exp/expand xxx
 
 * netstat
 此命令常常用于网络状态监控及调试，本地总结工作过程中常用的使用方式，以
